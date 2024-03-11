@@ -7,11 +7,12 @@
 #! Personal Note: Added pydub for speed control - Krishpkreame
 #! And os for file handling to merge
 import os
+import time
 from pydub import AudioSegment
-
 import threading
 import requests
 import base64
+
 #! Removed playsound import - Krishpkreame
 # from playsound import playsound
 COUNT = 0
@@ -108,7 +109,7 @@ def generate_audio(text: str, voice: str) -> bytes:
 def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int = 1.0, play_sound: bool = False) -> None:
     # checking if the website is available
     global current_endpoint, COUNT
-    # print("(#) Generating TTS")
+    # print("\033[1m(#)\033[0m Generating TTS")
     # Define a maximum number of retries
     max_retries = 3
 
@@ -128,30 +129,30 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                     COUNT += 1
                     break  # Exit the retry loop if successful
                 else:
-                    print("(#) Service not available, retrying...")
+                    print("\033[1m(#)\033[0m Service not available, retrying...")
         except Exception as e:
-            print("(#) Error occurred while checking API availability:", str(e))
+            print("\033[1m(#)\033[0m Error occurred while checking API availability:", str(e))
 
         # Wait for a short duration before retrying
         time.sleep(5)
 
     else:
         # If all retries fail, print an error message and return
-        print("(#) Maximum retries reached, unable to access the service.")
+        print("\033[1m(#)\033[0m Maximum retries reached, unable to access the service.")
         return
 
     # The rest of the function remains unchanged
     # checking if arguments are valid
     if voice == "none":
-        print("(#) No voice has been selected")
+        print("\033[1m(#)\033[0m No voice has been selected")
         return
 
     if not voice in VOICES:
-        print("(#) Voice does not exist")
+        print("\033[1m(#)\033[0m Voice does not exist")
         return
 
     if len(text) == 0:
-        print("(#) Insert a valid text")
+        print("\033[1m(#)\033[0m Insert a valid text")
         return
 
     # creating the audio file
@@ -164,7 +165,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                 audio_base64_data = str(audio).split('"')[3].split(",")[1]
 
             if audio_base64_data == "error":
-                print("(#) This voice is unavailable right now")
+                print("\033[1m(#)\033[0m This voice is unavailable right now")
                 return
 
         else:
@@ -181,7 +182,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                     base64_data = str(audio).split('"')[3].split(",")[1]
 
                 if audio_base64_data == "error":
-                    print("(#) This voice is unavailable right now")
+                    print("\033[1m(#)\033[0m This voice is unavailable right now")
                     return "error"
 
                 audio_base64_data[index] = base64_data
@@ -213,10 +214,10 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
         if play_sound:
             #! Personal Note: Removed playsound because it is not needed - Krishpkreame
             #! playsound(filename)
-            print("(#) Wont be playing sound, as it is not supported in this environment")
+            print("\033[1m(#)\033[0m Wont be playing sound, as it is not supported in this environment")
 
     except Exception as e:
-        print("(#) Error occurred while generating audio:", str(e))
+        print("\033[1m(#)\033[0m Error occurred while generating audio:", str(e))
 
 
 #! Personal Note: Added get_duration function - Krishpkreame

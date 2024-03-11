@@ -36,7 +36,7 @@ if __name__ == "__main__":
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
     except subprocess.CalledProcessError:
-        print("(#) ffmpeg is not installed. Please install ffmpeg to continue.")
+        print("\033[1m(#)\033[0m ffmpeg is not installed. Please install ffmpeg to continue.")
         exit(1)
 
     # Check if the credentials file exists
@@ -70,21 +70,21 @@ if __name__ == "__main__":
             creds[2].strip(),  # username
             creds[3].strip())  # password
     except:
-        print("(#) Credentials not set correctly, delete credentials.txt and setup again")
+        print("\033[1m(#)\033[0m Credentials not set correctly, delete credentials.txt and setup again")
         exit(1)
 
-    print("\n", 
-          "  ___  ___  ___ ___  \n ", 
-          "| _ \/ __|/ __/ __| \n ", 
-          "|   /\__ \ (_| (_ | \n ", 
-          "|_|_\|___/\___\___| \n ",
-          "\n ", 
-          "Reddit Short-Form Content Generator V2.0\n ", 
-          "\n")
-
+    print("\033[1m \n", 
+        "  ___  ___  ___ ___  \n ", 
+        "| _ \/ __|/ __/ __| \n ", 
+        "|   /\__ \ (_| (_ | \n ", 
+        "|_|_\|___/\___\___| \n ", 
+        "Reddit Short-Form Content Generator V2.0 \033[0m \n ")
 
     #url = input("Enter the Reddit post URL:\n")
-    url = "https://www.reddit.com/r/confessions/comments/1batw2h/my_husband_cheated_on_me_at_the_bachelor_party_am/"
+    # Temporary Code
+    #if not url:
+    #    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
+    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
 
     # Get the post from the URL
     post = reddit.get_from_url(url)
@@ -95,18 +95,27 @@ if __name__ == "__main__":
     time_only_hh_mm = ":".join(time_parts[:2])
 
     # Print the post details
-    print("Title :", post["title"])
-    print("Subred :", post["subreddit"])
-    print("Time :", time_only_hh_mm)
-    print("Date posted :", post["date_posted"])
-    print("ID :", post["id"])
-    print("No. of lines :", len(post["content"]))
-    print("Likes :", post["likes"])
-    print("Comments :", post["comments"])
-    print("Username :", post["username"])
-    print("Profile picture :", post["profile_picture_url"])
+    print("\033[1m Subred:\033[0m", post["subreddit"])
+    print("\033[1m ID:\033[0m", post["id"])
+    print("\033[1m Title:\033[0m", post["title"])
+    print("\033[1m Time:\033[0m", time_only_hh_mm)
+    print("\033[1m Date posted:\033[0m", post["date_posted"])
+    print("\033[1m No. of lines:\033[0m", len(post["content"]))
+    print("\033[1m Likes:\033[0m", post["likes"])
+    print("\033[1m Comments:\033[0m", post["comments"])
+    print("\033[1m Username:\033[0m", post["username"])
+    print("\033[1m Profile picture:\033[0m", post["profile_picture_url"])
 
-    print("(#) Generating Redit Post Mockup")
+    # Ask if the user wants to proceed
+    #proceed = input("Do you want to proceed? (Y/n)\n")
+    #if not proceed:
+    #    proceed = "y"
+    #if proceed.lower() != "y":
+    #    print("(#) Exiting")
+    #    exit(0)
+    proceed = "y"
+
+    print("\033[1m(#)\033[0m Generating Redit Post Mockup")
     # Load the image from input path
     background_image_path = "inputs/6365678-ai.png"
     background_image = Image.open(background_image_path)
@@ -144,7 +153,7 @@ if __name__ == "__main__":
         background_image.paste(output, (int(102.72), int(51.6)), output)
 
         # Save the modified image to output path
-        output_path = f"outputs/{post['id']}.png"
+        output_path = f"outputs/temp_redit_mockup.png"
         background_image.save(output_path)
     else:
         print("Failed to download the profile picture.")
@@ -159,11 +168,11 @@ if __name__ == "__main__":
     #if not proceed:
     #    proceed = "y"
     #if proceed.lower() != "y":
-    #    print("(#) Exiting")
+    #    print("\033[1m(#)\033[0m Exiting")
     #    exit(0)
     proceed = "y"
 
-    print("(#) Generating TTS")
+    print("\033[1m(#)\033[0m Generating TTS")
     # Create the audio files for each sentence using the script
     script = []
     shorteneddialoguescript = []
@@ -176,7 +185,7 @@ if __name__ == "__main__":
         tts(item, "en_us_007", filename, 1.15)
         dur = get_duration(filename)
         script.append((item, dur))
-    print("(#) Created audio files for script")
+    print("\033[1m(#)\033[0m Created audio files for script")
 
     # TTS Duration for shortnened subtitles
     for item, i in zip(new_content, range(0, len(new_content))):
@@ -184,7 +193,7 @@ if __name__ == "__main__":
         tts(item, "en_us_007", filename, 1.15)
         dur = get_duration(filename)
         shorteneddialoguescript.append((item, dur))
-    print("(#) Got durations for shortned dialogue script")
+    print("\033[1m\033[1m(#)\033[0m\033[0m Got durations for shortned dialogue script")
     
 
     # Create the srt using the script
@@ -198,7 +207,7 @@ if __name__ == "__main__":
     # Merge the audio files into one
     wav_path = f"inputs/{post['id']}.wav"
     totaldur = merge_audio_files(wav_path, 0.1)
-    print("(#) Merged audio duration:", totaldur, "seconds")
+    print("\033[1m(#)\033[0m Merged audio duration:", totaldur, "seconds")
 
     # Create the video
     v = VideoEditor(totaldur, srt_path, wav_path, False)
