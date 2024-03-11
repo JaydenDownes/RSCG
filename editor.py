@@ -98,6 +98,7 @@ class VideoEditor:
         Returns:
         TextClip: A TextClip object with the specified text and style.
         """
+        
 
         # Reset the Y coordinate of the text to below the screen
         self.y_cord = 1080
@@ -108,19 +109,6 @@ class VideoEditor:
             font='Tahoma-Bold', fontsize=39,
             color='white', method='caption', size=(550, None))
 
-    def __simple_slideup(self, t):
-        """
-        Slide the text up the screen until it reaches the center.
-
-        Args:
-            t: The time parameter for the animation.
-
-        Returns:
-            A tuple containing the horizontal alignment ('center') and the updated vertical position of the text.
-        """
-        if self.y_cord > 500:
-            self.y_cord -= 130
-        return 'center', self.y_cord
 
     def start_render(self, output_path="outputs/output.mp4"):
         """

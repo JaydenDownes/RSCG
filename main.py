@@ -1,5 +1,6 @@
 from reddit import RedditAPI
 from tiktokvoice import tts, get_duration, merge_audio_files
+from tqdm import tqdm
 from srt import gen_srt_file
 from editor import VideoEditor
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -7,6 +8,7 @@ import requests
 import datetime
 import subprocess
 import os
+import sys
 
 
 def setup_credentials():
@@ -84,7 +86,7 @@ if __name__ == "__main__":
     # Temporary Code
     #if not url:
     #    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
-    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
+    url = "https://www.reddit.com/r/nosleep/comments/1bbaoiu/i_thought_my_wife_was_medicating_herself_but_now/"
 
     # Get the post from the URL
     post = reddit.get_from_url(url)
@@ -180,12 +182,17 @@ if __name__ == "__main__":
     new_content = [post["title"]] + post["new_content"]
 
     # TTS for Voice over
-    for item, i in zip(content, range(0, len(content))):
-        filename = f"outputs/temp_{post['id']}_{i}.mp3"
-        tts(item, "en_us_001", filename, 1.15)
-        dur = get_duration(filename)
-        script.append((item, dur))
-    print("\033[1m(#)\033[0m Created audio files for script")
+    with tqdm(total=len(content), desc="Generating TTS") as pbar:
+        for item, i in zip(content, range(len(content))):
+            filename = f"outputs/temp_{post['id']}_{i}.mp3"
+            tts(item, "en_us_006", filename, 1.15)
+            dur = get_duration(filename)
+            script.append((item, dur))
+            pbar.update(1)
+
+    # Clearing the progress bar from the terminal
+    sys.stdout.write("\033[F")  # Move cursor up one line
+    sys.stdout.write("\033[K")  # Clear line
 
 
     # Create the srt using the script
