@@ -80,7 +80,6 @@ class VideoEditor:
         # The path to the WAV and SRT file.
         self.srt_path = srt_path
         self.wav_path = wav_path
-
         # A list of background videos
         self.bg_path = [
             f for f in os.listdir("inputs") if f.endswith('.mp4')]

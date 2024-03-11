@@ -198,5 +198,6 @@ if __name__ == "__main__":
     print("\033[1m(#)\033[0m Merged audio duration:", totaldur, "seconds")
 
     # Create the video
+    video_title = str(post["title"] + " - " + post["username"] + " - " + post["date_posted"])
     v = VideoEditor(totaldur, srt_path, wav_path, False)
-    v.start_render(f"outputs/{post['id']}.mp4")
+    v.start_render(f"outputs/{video_title}.mp4")
