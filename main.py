@@ -182,27 +182,15 @@ if __name__ == "__main__":
     # TTS for Voice over
     for item, i in zip(content, range(0, len(content))):
         filename = f"outputs/temp_{post['id']}_{i}.mp3"
-        tts(item, "en_us_007", filename, 1.15)
+        tts(item, "en_us_001", filename, 1.15)
         dur = get_duration(filename)
         script.append((item, dur))
     print("\033[1m(#)\033[0m Created audio files for script")
 
-    # TTS Duration for shortnened subtitles
-    for item, i in zip(new_content, range(0, len(new_content))):
-        filename = f"outputs/temp_{post['id']}_{i}_2.mp3"
-        tts(item, "en_us_007", filename, 1.15)
-        dur = get_duration(filename)
-        shorteneddialoguescript.append((item, dur))
-    print("\033[1m\033[1m(#)\033[0m\033[0m Got durations for shortned dialogue script")
-    
 
     # Create the srt using the script
     srt_path = f"inputs/{post['id']}.srt"
     gen_srt_file(script, srt_path, 0.1)
-
-    # Create TTS Duration for shortnened subtitles scrtipt
-    srt_path = f"inputs/{post['id']}_2.srt"
-    gen_srt_file(shorteneddialoguescript, srt_path, 0.1)
 
     # Merge the audio files into one
     wav_path = f"inputs/{post['id']}.wav"
