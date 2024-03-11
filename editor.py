@@ -69,7 +69,7 @@ class VideoEditor:
             background_video (VideoFileClip): The background video clip.
         """
         # Initialize the reddit mockup image
-        self.image_path = "outputs/temp_redit_mockup.png"
+        self.image_path = "temp/redit_mockup.png"
 
         # The Y coordinate of the text.
         self.y_cord = 1080

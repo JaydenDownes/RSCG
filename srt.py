@@ -28,4 +28,4 @@ def gen_srt_file(subtitles: list, file_path: str, delay: int = 0.1):
         current_time += delay  # Add delay after each subtitle
     with open(file_path, "w") as f:
         f.write(srt_content)  # Write the SRT content to the file
-        print(f"\033[1m(#)\033[0m SRT file sucessfully generated at '{file_path}'")
+        #print(f"\033[1m(#)\033[0m SRT file sucessfully generated at '{file_path}'")

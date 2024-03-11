@@ -90,7 +90,7 @@ if __name__ == "__main__":
     # Temporary Code
     #if not url:
     #    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
-    url = "https://www.reddit.com/r/nosleep/comments/1bbaoiu/i_thought_my_wife_was_medicating_herself_but_now/"
+    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
 
     # Get the post from the URL
     post = reddit.get_from_url(url)
@@ -111,6 +111,7 @@ if __name__ == "__main__":
     print("\033[1m Comments:\033[0m", post["comments"])
     print("\033[1m Username:\033[0m", post["username"])
     print("\033[1m Profile picture:\033[0m", post["profile_picture_url"])
+    print("\n")
 
     # Ask if the user wants to proceed
     #proceed = input("Do you want to proceed? (Y/n)\n")
@@ -212,3 +213,21 @@ if __name__ == "__main__":
     video_title = str(post["title"] + " - " + post["username"] + " - " + post["date_posted"])
     v = VideoEditor(totaldur, srt_path, wav_path, False)
     v.start_render(f"outputs/{video_title}.mp4")
+
+    # Clean up the temp directory
+    files_to_delete = os.listdir("temp")
+    with tqdm(total=len(files_to_delete), desc="Deleting files") as pbar:
+        # Iterate over the files in the directory and delete them
+        for filename in files_to_delete:
+            filepath = os.path.join("temp", filename)
+            try:
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
+                    pbar.update(1)  # Update progress bar
+            except Exception as e:
+                print(f"Error occurred while deleting {filename}: {str(e)}")
+                print("\n") # Used so the progress bar wont clear the error
+
+    # Clearing the progress bar from the terminal
+    sys.stdout.write("\033[F")  # Move cursor up one line
+    sys.stdout.write("\033[K")  # Clear line

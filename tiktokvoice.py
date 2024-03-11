@@ -12,6 +12,8 @@ from pydub import AudioSegment
 import threading
 import requests
 import base64
+from tqdm import tqdm
+import sys
 
 #! Removed playsound import - Krishpkreame
 # from playsound import playsound
@@ -196,7 +198,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                 threads.append(thread)
 
             # Wait for all threads to complete
-            for thread in threads:
+            for thread in tqdm(threads, desc="Generating Audio"):
                 thread.join()
 
             # Concatenate the base64 data in the correct order
@@ -265,21 +267,32 @@ def merge_audio_files(output_file: str, delay: float = 0.1) -> float:
     # Create an empty AudioSegment object
     merged_audio = AudioSegment.silent(duration=0)
 
-    # Iterate over the mp3 files and append them to the merged_audio with a small delay
-    for i, file in enumerate(mp3_files):
-        audio = AudioSegment.from_file(
-            os.path.join("temp", file), format="mp3")
-        if i == 0:
-            merged_audio += audio
-        else:
-            merged_audio += AudioSegment.silent(duration=(delay*1000)) + audio
+   # Iterate over the mp3 files and append them to the merged_audio with a small delay
+    with tqdm(total=len(mp3_files), desc="Merging Audio") as pbar:
+        for i, file in enumerate(mp3_files):
+            audio = AudioSegment.from_file(os.path.join("temp", file), format="mp3")
+            if i == 0:
+                merged_audio += audio
+            else:
+                merged_audio += AudioSegment.silent(duration=(delay * 1000)) + audio
+            pbar.update(1)
+
+    # Clearing the progress bar from the terminal
+    sys.stdout.write("\033[F")  # Move cursor up one line
+    sys.stdout.write("\033[K")  # Clear line
 
     # Export the merged audio as a single mp3 file
     merged_audio.export(output_file, format="wav")
 
     # Remove all the mp3 files from the temp directory
-    for file in mp3_files:
-        os.remove(os.path.join("temp", file))
+    with tqdm(total=len(mp3_files), desc="Removing MP3 files") as pbar:
+        for file in mp3_files:
+            os.remove(os.path.join("temp", file))
+            pbar.update(1)
+
+    # Clearing the progress bar from the terminal
+    sys.stdout.write("\033[F")  # Move cursor up one line
+    sys.stdout.write("\033[K")  # Clear line
 
     # Return the duration of the merged audio in seconds
     return len(merged_audio) / 1000
