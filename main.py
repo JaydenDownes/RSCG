@@ -75,10 +75,8 @@ if __name__ == "__main__":
           "\n")
 
 
-    url = input("Enter the Reddit post URL:\n")
-    # Temporary Code
-    if not url:
-        url = "https://www.reddit.com/r/confessions/comments/1bamn8c/i_think_my_marriage_is_over/"
+    #url = input("Enter the Reddit post URL:\n")
+    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
 
     # Get the post from the URL
     post = reddit.get_from_url(url)
@@ -91,12 +89,13 @@ if __name__ == "__main__":
     print("No. of lines :", len(post["content"]))
 
     # Ask if the user wants to proceed
-    proceed = input("Do you want to proceed? (Y/n)\n")
-    if not proceed:
-        proceed = "y"
-    if proceed.lower() != "y":
-        print("(#) Exiting")
-        exit(0)
+    #proceed = input("Do you want to proceed? (Y/n)\n")
+    #if not proceed:
+    #    proceed = "y"
+    #if proceed.lower() != "y":
+    #    print("(#) Exiting")
+    #    exit(0)
+    proceed = "y"
 
     print("(#) Generating TTS")
     # Create the audio files for each sentence using the script

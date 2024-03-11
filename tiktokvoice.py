@@ -108,6 +108,7 @@ def generate_audio(text: str, voice: str) -> bytes:
 def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int = 1.0, play_sound: bool = False) -> None:
     # checking if the website is available
     global current_endpoint, COUNT
+    # print("(#) Generating TTS")
     # Define a maximum number of retries
     max_retries = 3
 

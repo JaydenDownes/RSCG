@@ -56,10 +56,10 @@ class VideoEditor:
         # Reset the Y coordinate of the text to below the screen
         self.y_cord = 1080
         # Return a TextClip object with the specified text and style
+        # stroke_color='black', stroke_width=1.8,
         return TextClip(
             txt,
-            font='Montserrat-ExtraBold', fontsize=39,
-            stroke_color='black', stroke_width=1.8,
+            font='Tahoma-Bold', fontsize=39,
             color='white', method='caption', size=(550, None))
 
     def __simple_slideup(self, t):

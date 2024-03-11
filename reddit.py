@@ -66,6 +66,7 @@ class RedditAPI:
         Returns:
             list: A list of filtered sentences.
         """
+        
         # Grammer fix for better TTS
         self.__unfiltered = ftfy(textstr)
         # Check words matched with replace words
@@ -103,6 +104,8 @@ class RedditAPI:
             "time": self.__utc_to_datetimestr(self.post.created_utc),
             "content": self.__filter_content(self.post.selftext)
         }
+        
+
 
     def get_top_posts(self, subreddit: str, limit: int = 10):
         """
