@@ -54,6 +54,10 @@ if __name__ == "__main__":
     if not os.path.exists("inputs"):
         os.mkdir("inputs")
         # print("Created inputs folder\n - This is where input video files will need to be stored\n - The srt and wav files will also be stored here.")
+    # Check if the outputs folder exists
+    if not os.path.exists("temp"):
+        os.mkdir("temp")
+        # print("Created temp folder\n - This is where temporary will be saved.")
 
     # Check if any mp4 files are present in the inputs folder
     if len([i for i in os.listdir("inputs") if i.endswith(".mp4")]) == 0:
@@ -139,7 +143,7 @@ if __name__ == "__main__":
     profile_pic_url = post["profile_picture_url"]
     response = requests.get(profile_pic_url)
     if response.status_code == 200:
-        profile_pic_path = "profile_pic.png"
+        profile_pic_path = "temp/profile_pic.png"
         with open(profile_pic_path, "wb") as f:
             f.write(response.content)
 
@@ -155,13 +159,13 @@ if __name__ == "__main__":
         background_image.paste(output, (int(102.72), int(51.6)), output)
 
         # Save the modified image to output path
-        output_path = f"outputs/temp_redit_mockup.png"
+        output_path = f"temp/redit_mockup.png"
         background_image.save(output_path)
     else:
         print("Failed to download the profile picture.")
 
     # Save the modified image to output path
-    output_path = f"outputs/{post['id']}.png"
+    output_path = f"temp/{post['id']}.png"
     background_image.save(output_path)
 
 
@@ -184,7 +188,7 @@ if __name__ == "__main__":
     # TTS for Voice over
     with tqdm(total=len(content), desc="Generating TTS") as pbar:
         for item, i in zip(content, range(len(content))):
-            filename = f"outputs/temp_{post['id']}_{i}.mp3"
+            filename = f"temp/temp_{post['id']}_{i}.mp3"
             tts(item, "en_us_006", filename, 1.15)
             dur = get_duration(filename)
             script.append((item, dur))

@@ -255,9 +255,9 @@ def merge_audio_files(output_file: str, delay: float = 0.1) -> float:
     Returns:
         float: The duration of the merged audio in seconds.
     """
-    # Get all mp3 files in the outputs directory
+    # Get all mp3 files in the temp directory
     mp3_files = [file for file in os.listdir(
-        "outputs") if file.endswith(".mp3")]
+        "temp") if file.endswith(".mp3")]
 
     # Sort the files in number order
     mp3_files.sort(key=lambda x: int(x.split("_")[2].split(".")[0]))
@@ -268,7 +268,7 @@ def merge_audio_files(output_file: str, delay: float = 0.1) -> float:
     # Iterate over the mp3 files and append them to the merged_audio with a small delay
     for i, file in enumerate(mp3_files):
         audio = AudioSegment.from_file(
-            os.path.join("outputs", file), format="mp3")
+            os.path.join("temp", file), format="mp3")
         if i == 0:
             merged_audio += audio
         else:
@@ -277,9 +277,9 @@ def merge_audio_files(output_file: str, delay: float = 0.1) -> float:
     # Export the merged audio as a single mp3 file
     merged_audio.export(output_file, format="wav")
 
-    # Remove all the mp3 files from the outputs directory
+    # Remove all the mp3 files from the temp directory
     for file in mp3_files:
-        os.remove(os.path.join("outputs", file))
+        os.remove(os.path.join("temp", file))
 
     # Return the duration of the merged audio in seconds
     return len(merged_audio) / 1000
