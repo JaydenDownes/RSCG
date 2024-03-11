@@ -2,6 +2,9 @@ from reddit import RedditAPI
 from tiktokvoice import tts, get_duration, merge_audio_files
 from srt import gen_srt_file
 from editor import VideoEditor
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+import requests
+import datetime
 import subprocess
 import os
 
@@ -21,6 +24,11 @@ def setup_credentials():
     password = input("Enter the password:\n")
     with open("credentials.txt", "w") as f:
         f.write(f"{client_id}\n{client_secret}\n{username}\n{password}")
+
+# Function to add text to the image
+def add_text(draw, text, position, font, size, color):
+    font = ImageFont.truetype(font, size)
+    draw.text(position, text, font=font, fill=color)
 
 
 if __name__ == "__main__":
@@ -76,17 +84,75 @@ if __name__ == "__main__":
 
 
     #url = input("Enter the Reddit post URL:\n")
-    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
+    url = "https://www.reddit.com/r/confessions/comments/1batw2h/my_husband_cheated_on_me_at_the_bachelor_party_am/"
 
     # Get the post from the URL
     post = reddit.get_from_url(url)
 
+    # Split the time string and keep only the hours and minutes
+    time_parts = post["time"].split(":")
+    # Reconstruct the time string with only hours and minutes
+    time_only_hh_mm = ":".join(time_parts[:2])
+
     # Print the post details
     print("Title :", post["title"])
     print("Subred :", post["subreddit"])
-    print("Time :", post["time"])
+    print("Time :", time_only_hh_mm)
+    print("Date posted :", post["date_posted"])
     print("ID :", post["id"])
     print("No. of lines :", len(post["content"]))
+    print("Likes :", post["likes"])
+    print("Comments :", post["comments"])
+    print("Username :", post["username"])
+    print("Profile picture :", post["profile_picture_url"])
+
+    print("(#) Generating Redit Post Mockup")
+    # Load the image from input path
+    background_image_path = "inputs/6365678-ai.png"
+    background_image = Image.open(background_image_path)
+    draw = ImageDraw.Draw(background_image)
+
+    # Define font settings
+    font_roboto_medium = "fonts/Roboto-Medium.ttf"
+    font_roboto = "fonts/Roboto-Regular.ttf"
+    font_roboto_light = "fonts/Roboto-Light.ttf"
+
+    # Add text to the image
+    add_text(draw, post["username"], (188, 78), font_roboto_medium, 24, "#000000")  # Username
+    add_text(draw, post["title"], (103, 141), font_roboto, 20, "#000000")  # Title
+    add_text(draw, (time_only_hh_mm + "  .  "), (104, 274), font_roboto, 13.4, "#b0b0b0")  # Time
+    add_text(draw, post["date_posted"], (150, 274), font_roboto, 13.4, "#b0b0b0")  # Date
+    add_text(draw, str(post["likes"]), (240, 310), font_roboto_light, 12.34, "#666666")  # Likes
+    add_text(draw, str(post["comments"]), (127, 310), font_roboto_light, 12.34, "#666666")  # Comments
+
+    profile_pic_url = post["profile_picture_url"]
+    response = requests.get(profile_pic_url)
+    if response.status_code == 200:
+        profile_pic_path = "profile_pic.png"
+        with open(profile_pic_path, "wb") as f:
+            f.write(response.content)
+
+        # Load profile picture and mask
+        profile_pic = Image.open(profile_pic_path)
+        mask = Image.open('inputs/mask.png').convert('L')
+
+        # Resize profile picture to fit the mask
+        output = ImageOps.fit(profile_pic, mask.size, centering=(0.5, 0.5))
+        output.putalpha(mask)
+
+        # Paste profile picture onto the main image
+        background_image.paste(output, (int(102.72), int(51.6)), output)
+
+        # Save the modified image to output path
+        output_path = f"outputs/{post['id']}.png"
+        background_image.save(output_path)
+    else:
+        print("Failed to download the profile picture.")
+
+    # Save the modified image to output path
+    output_path = f"outputs/{post['id']}.png"
+    background_image.save(output_path)
+
 
     # Ask if the user wants to proceed
     #proceed = input("Do you want to proceed? (Y/n)\n")
@@ -100,8 +166,11 @@ if __name__ == "__main__":
     print("(#) Generating TTS")
     # Create the audio files for each sentence using the script
     script = []
+    shorteneddialoguescript = []
     content = [post["title"]] + post["content"]
+    new_content = [post["title"]] + post["new_content"]
 
+    # TTS for Voice over
     for item, i in zip(content, range(0, len(content))):
         filename = f"outputs/temp_{post['id']}_{i}.mp3"
         tts(item, "en_us_007", filename, 1.15)
@@ -109,9 +178,22 @@ if __name__ == "__main__":
         script.append((item, dur))
     print("(#) Created audio files for script")
 
+    # TTS Duration for shortnened subtitles
+    for item, i in zip(new_content, range(0, len(new_content))):
+        filename = f"outputs/temp_{post['id']}_{i}_2.mp3"
+        tts(item, "en_us_007", filename, 1.15)
+        dur = get_duration(filename)
+        shorteneddialoguescript.append((item, dur))
+    print("(#) Got durations for shortned dialogue script")
+    
+
     # Create the srt using the script
     srt_path = f"inputs/{post['id']}.srt"
     gen_srt_file(script, srt_path, 0.1)
+
+    # Create TTS Duration for shortnened subtitles scrtipt
+    srt_path = f"inputs/{post['id']}_2.srt"
+    gen_srt_file(shorteneddialoguescript, srt_path, 0.1)
 
     # Merge the audio files into one
     wav_path = f"inputs/{post['id']}.wav"

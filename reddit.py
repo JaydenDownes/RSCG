@@ -55,6 +55,7 @@ class RedditAPI:
         self.__datetime_obj = datetime.utcfromtimestamp(float(utc))
         # Convert datetime object to formatted string and return
         return self.__datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
+    
 
     def __filter_content(self, textstr: str):
         """
@@ -93,16 +94,45 @@ class RedditAPI:
             - id (str): The ID of the post.
             - title (str): The title of the post.
             - time (str): The creation time of the post in the format "dd-mm-yyyy hh:mm:ss".
-            - content (list): A list of sentences extracted from the post's content.
+            - original_content (list): The original content of the Reddit post.
+            - new_content (list): A list of strings with a maximum of three words in each string.
+            - likes (int): The number of likes the post has received.
+            - comments (int): The number of comments the post has received.
+            - username (str): The username of the poster.
         """
         # Get post from URL
         self.post = self.reddit.submission(url=url)
+        # Original content list
+        original_content = self.__filter_content(self.post.selftext)
+        # Split content into words
+        words = self.post.selftext.split()
+        # New content list: Group words into lists of strings with a maximum of three words
+        new_content = [' '.join(words[i:i+3]) for i in range(0, len(words), 3)]
+        
+        # Print both content lists
+        ##print("New Content:", new_content)
+        
+        try:
+            # Try to get the profile picture URL
+            profile_picture_url = self.post.author.icon_img
+        except AttributeError:
+            # Use the default profile picture URL
+            profile_picture_url = "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png"
+
+
         return {
             "subreddit": self.post.subreddit.display_name,
             "id": self.post.id,
             "title": self.post.title,
-            "time": self.__utc_to_datetimestr(self.post.created_utc),
-            "content": self.__filter_content(self.post.selftext)
+            "time": self.__utc_to_datetimestr(self.post.created_utc).split()[1],  # Extracting time part only
+            "date_posted": self.__utc_to_datetimestr(self.post.created_utc).split()[0],  # Extract date part
+            "content": original_content,
+            "new_content": new_content,
+            "likes": self.post.score,
+            "comments": self.post.num_comments,
+            "username": self.post.author.name, 
+            "profile_picture_url": profile_picture_url
+
         }
         
 
