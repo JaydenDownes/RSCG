@@ -28,22 +28,22 @@ if __name__ == "__main__":
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
     except subprocess.CalledProcessError:
-        print("ffmpeg is not installed. Please install ffmpeg to continue.")
+        print("(#) ffmpeg is not installed. Please install ffmpeg to continue.")
         exit(1)
 
     # Check if the credentials file exists
     if not os.path.exists("credentials.txt"):
-        print("No credentials file found, going through the setup - ")
+        # print("No credentials file found, going through the setup - ")
         setup_credentials()
 
     # Check if the outputs folder exists
     if not os.path.exists("outputs"):
         os.mkdir("outputs")
-        print("Created inputs folder\n - This is where final videos will be saved.")
+        # print("Created inputs folder\n - This is where final videos will be saved.")
     # Check if the inputs folder exists
     if not os.path.exists("inputs"):
         os.mkdir("inputs")
-        print("Created inputs folder\n - This is where input video files will need to be stored\n - The srt and wav files will also be stored here.")
+        # print("Created inputs folder\n - This is where input video files will need to be stored\n - The srt and wav files will also be stored here.")
 
     # Check if any mp4 files are present in the inputs folder
     if len([i for i in os.listdir("inputs") if i.endswith(".mp4")]) == 0:
@@ -62,12 +62,23 @@ if __name__ == "__main__":
             creds[2].strip(),  # username
             creds[3].strip())  # password
     except:
-        print("credentials not set correctly, delete credentials.txt and setup again")
+        print("(#) Credentials not set correctly, delete credentials.txt and setup again")
         exit(1)
 
-    print("\n"*10, "-"*30, "\nWelcome to the Reddit to TikTok Video Creator\n")
+    print("\n", 
+          "  ___  ___  ___ ___  \n ", 
+          "| _ \/ __|/ __/ __| \n ", 
+          "|   /\__ \ (_| (_ | \n ", 
+          "|_|_\|___/\___\___| \n ",
+          "\n ", 
+          "Reddit Short-Form Content Generator V2.0\n ", 
+          "\n")
+
 
     url = input("Enter the Reddit post URL:\n")
+    # Temporary Code
+    if not url:
+        url = "https://www.reddit.com/r/confessions/comments/1bamn8c/i_think_my_marriage_is_over/"
 
     # Get the post from the URL
     post = reddit.get_from_url(url)
@@ -80,21 +91,24 @@ if __name__ == "__main__":
     print("No. of lines :", len(post["content"]))
 
     # Ask if the user wants to proceed
-    proceed = input("Do you want to proceed? (y/n)\n")
+    proceed = input("Do you want to proceed? (Y/n)\n")
+    if not proceed:
+        proceed = "y"
     if proceed.lower() != "y":
-        print("Exiting")
+        print("(#) Exiting")
         exit(0)
 
+    print("(#) Generating TTS")
     # Create the audio files for each sentence using the script
     script = []
     content = [post["title"]] + post["content"]
 
     for item, i in zip(content, range(0, len(content))):
         filename = f"outputs/temp_{post['id']}_{i}.mp3"
-        tts(item, "en_us_001", filename, 1.15)
+        tts(item, "en_us_007", filename, 1.15)
         dur = get_duration(filename)
         script.append((item, dur))
-    print("Created audio files for script")
+    print("(#) Created audio files for script")
 
     # Create the srt using the script
     srt_path = f"inputs/{post['id']}.srt"
@@ -103,7 +117,7 @@ if __name__ == "__main__":
     # Merge the audio files into one
     wav_path = f"inputs/{post['id']}.wav"
     totaldur = merge_audio_files(wav_path, 0.1)
-    print("Merged audio duration:", totaldur, "seconds")
+    print("(#) Merged audio duration:", totaldur, "seconds")
 
     # Create the video
     v = VideoEditor(totaldur, srt_path, wav_path, False)

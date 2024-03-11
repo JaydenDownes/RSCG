@@ -52,6 +52,7 @@ class VideoEditor:
         Returns:
         TextClip: A TextClip object with the specified text and style.
         """
+
         # Reset the Y coordinate of the text to below the screen
         self.y_cord = 1080
         # Return a TextClip object with the specified text and style
@@ -85,18 +86,24 @@ class VideoEditor:
         Returns:
             None
         """
-        print("Rendering video...")
+        print("(#) Rendering video...")
         # The maximum time to start the video clip from. (Otherwise the clip will cut to black)
         self.upperlimit_time = (
             self.background_video.duration -
             math.ceil(10*self.clip_duration) / 10
         )
+        if self.upperlimit_time < 0:
+            print("(#) The background video isn't long enough for the chosen post.")
+            print("(#) Please choose a shorter post or use a longer background video.")
+            self.upperlimit_time = 0
+            print("(#) Background video duration:", self.background_video.duration)
+            print("(#) Clip duration:", self.clip_duration)
 
         # Randomly select a start time for the video clip
         self.start_time = random.randint(0, math.floor(self.upperlimit_time))
-        print(
-            f"Start time: {self.start_time} seconds |,",
-            f"End time: {self.start_time + self.clip_duration} seconds")
+        # print(
+        #    f"Start time: {self.start_time} seconds |,",
+        #    f"End time: {self.start_time + self.clip_duration} seconds")
 
         # Clip the video from the start time to the desired endtime
         self.rendered_video = self.background_video.subclip(
@@ -107,7 +114,7 @@ class VideoEditor:
         # Set the audio of the video using the WAV file
         self.rendered_video = self.rendered_video.set_audio(
             AudioFileClip(self.wav_path))
-        print("Adding subtitles...")
+        print("(#) Adding subtitles...")
 
         # Create a SubtitlesClip object using the SRT file, and decide whether to animate
         if self.animate_text:
@@ -125,4 +132,4 @@ class VideoEditor:
         # Save the video to the outputs folder
         self.result.write_videofile(
             output_path, fps=60, codec="libx264", bitrate="8000k")
-        print("Video rendered successfully!")
+        print("(#) Video rendered successfully!")

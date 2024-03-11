@@ -108,31 +108,49 @@ def generate_audio(text: str, voice: str) -> bytes:
 def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int = 1.0, play_sound: bool = False) -> None:
     # checking if the website is available
     global current_endpoint, COUNT
+    # Define a maximum number of retries
+    max_retries = 3
 
-    if get_api_response().status_code == 200:
-        print("tts online", COUNT)
-        COUNT += 1
+    # Retry loop
+    for attempt in range(max_retries):
+        try:
+            # Check if the API is available
+            if get_api_response().status_code == 200:
+                # print("tts online", COUNT)
+                COUNT += 1
+                break  # Exit the retry loop if successful
+            else:
+                # Switch to the alternate endpoint if the first one fails
+                current_endpoint = (current_endpoint + 1) % 2
+                if get_api_response().status_code == 200:
+                    # print("tts online", COUNT)
+                    COUNT += 1
+                    break  # Exit the retry loop if successful
+                else:
+                    print("(#) Service not available, retrying...")
+        except Exception as e:
+            print("(#) Error occurred while checking API availability:", str(e))
+
+        # Wait for a short duration before retrying
+        time.sleep(5)
+
     else:
-        current_endpoint = (current_endpoint + 1) % 2
-        if get_api_response().status_code == 200:
-            print("tts online", COUNT)
-            COUNT += 1
-        else:
-            print(
-                f"Service not available and probably temporarily rate limited, try again later...")
-            return
+        # If all retries fail, print an error message and return
+        print("(#) Maximum retries reached, unable to access the service.")
+        return
 
+    # The rest of the function remains unchanged
     # checking if arguments are valid
     if voice == "none":
-        print("No voice has been selected")
+        print("(#) No voice has been selected")
         return
 
     if not voice in VOICES:
-        print("Voice does not exist")
+        print("(#) Voice does not exist")
         return
 
     if len(text) == 0:
-        print("Insert a valid text")
+        print("(#) Insert a valid text")
         return
 
     # creating the audio file
@@ -145,7 +163,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                 audio_base64_data = str(audio).split('"')[3].split(",")[1]
 
             if audio_base64_data == "error":
-                print("This voice is unavailable right now")
+                print("(#) This voice is unavailable right now")
                 return
 
         else:
@@ -162,7 +180,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                     base64_data = str(audio).split('"')[3].split(",")[1]
 
                 if audio_base64_data == "error":
-                    print("This voice is unavailable right now")
+                    print("(#) This voice is unavailable right now")
                     return "error"
 
                 audio_base64_data[index] = base64_data
@@ -183,7 +201,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
             audio_base64_data = "".join(audio_base64_data)
 
         save_audio_file(audio_base64_data, filename)
-        print(f"'{filename}' saved.")
+        #print(f"'{filename}' saved.")
 
         #! Personal Note: Added speed control to the TTS - Krishpkreame
         if speed != 1.0:
@@ -194,10 +212,10 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
         if play_sound:
             #! Personal Note: Removed playsound because it is not needed - Krishpkreame
             #! playsound(filename)
-            print("Wont be playing sound, as it is not supported in this environment")
+            print("(#) Wont be playing sound, as it is not supported in this environment")
 
     except Exception as e:
-        print("Error occurred while generating audio:", str(e))
+        print("(#) Error occurred while generating audio:", str(e))
 
 
 #! Personal Note: Added get_duration function - Krishpkreame
