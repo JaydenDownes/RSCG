@@ -1,7 +1,3 @@
-# Reddit Short-Form Content Generator (RSCG)
-
-RSCG is a Python-based project for automated short-form video content creation using Reddit data. It leverages Reddit API, AI text-to-speech (TTS), and code-based video editing to transform engaging Reddit threads into shareable videos.
-
 ## How to setup:
 
 ### Step 1: Download RSCG and all dependencies
@@ -31,50 +27,4 @@ RSCG is a Python-based project for automated short-form video content creation u
 2. **Run** `python main.py`. - (try `python3 main.py` if it doesnt work)
 3. On first run it will run through setup where you put in the credentials you got from Step 2 (Setup once the first time you run it)
 4. You will need to put a mp4 video that will be used as a background video into the **inputs** folder, the longer the video the better.
-5. Here is a input video you could use, it is minecraft parkour and sized for tiktok - [Video](https://www.dropbox.com/scl/fi/d83qxfqc6e9dai1mnx6bv/background1.mp4?rlkey=ee9ttg8ctiaq4kdx6rzdg0upq&dl=0)
-6. After setting up you can enter any reddit link into the program and it will create a tiktok style video in the **outputs** folder
-
-## Example
-
-##### Here is an example of a video made with RSCG
-Reddit story used - [here](https://www.reddit.com/r/AmItheAsshole/comments/1ayhgo1/aita_for_refusing_to_share_some_of_my_food_with/)
-
-
-
-https://github.com/Krishpkreame/RSCG/assets/79666419/79b46267-d5d1-4330-ba3f-f1969f73d037
-
-
-
-## Functionality:
-
-### Reddit PRAW API:
-
-- Fetches data from specified Reddit threads or subreddits.
-- Filters scraped content based on certain criteria.
-
-### AI Text-to-Speech:
-
-- Converts filtered text content into audio using TikTok TTS service.
-- Supports multiple voices and languages.
-
-### Code-Based Video Editing:
-
-- Utilizes Python libraries (MoviePy) to create video sequences.
-- Overlays audio on randomly cut background video.
-- Basic editing capabilities (text overlays).
-
-## Output:
-
-- Generates short-form videos (e.g., TikTok, YouTube Shorts format) ready for sharing.
-
-## Technical Details:
-
-- Programming Language: Python
-- Dependencies:
-  - PRAW (Reddit API)
-  - AI TTS service API
-  - MoivePy as the video editing library
-
-## Contributing:
-
-- Contributions and feature enhancements are welcome. Please fork this repository, make your changes, and submit a pull request with a detailed description of the proposed changes.
+5. After setting up you can enter any reddit link into the program and it will create a tiktok style video in the **outputs** folder
