@@ -318,10 +318,57 @@ class RedditAPI:
             })
         return self.final
     
-    # Function to add text to the image
-    def add_text(self, draw, text, position, font, size, color):
+    def add_text(self, draw, text, position, font, size, color, max_width=None, max_height=None):
+        """
+        Adds text to the image with optional wrapping based on maximum width and height.
+
+        Args:
+            draw (ImageDraw): The ImageDraw object for drawing text on the image.
+            text (str): The text to be added.
+            position (tuple): The position where the text should start (x, y).
+            font (str): The path to the font file.
+            size (int): The font size.
+            color (str): The color of the text.
+            max_width (int, optional): The maximum width for the wrapped text.
+            max_height (int, optional): The maximum height for the wrapped text.
+
+        Returns:
+            None
+        """
+        # Load the font
         font = ImageFont.truetype(font, size)
+
+        # Check if maximum width and height are specified
+        if max_width is not None and max_height is not None:
+            # Split the text into words
+            words = text.split()
+
+            # Initialize variables for wrapped text
+            wrapped_text = ''
+            line = ''
+            lines = []
+
+            # Iterate over each word and wrap text based on max width
+            for word in words:
+                # Check if adding the word exceeds the max width
+                if draw.textlength(line + ' ' + word, font=font) <= max_width:
+                    # If not, add the word to the current line
+                    line += ' ' + word if line else word
+                else:
+                    # If adding the word exceeds the max width, start a new line
+                    lines.append(line)
+                    line = word
+
+            # Add the last line
+            lines.append(line)
+
+            # Reset text to wrapped lines
+            text = '\n'.join(lines)
+
+        # Draw the text on the image
         draw.text(position, text, font=font, fill=color)
+
+        return
 
     def generateVideo(self, url):
         #url = input("Enter the Reddit post URL:\n")
@@ -365,9 +412,13 @@ class RedditAPI:
         font_roboto = "fonts/Roboto-Regular.ttf"
         font_roboto_light = "fonts/Roboto-Light.ttf"
 
+        # Define maximum width and height for the title
+        max_title_width = 501  # Maximum width in pixels
+        max_title_height = 68  # Maximum height in pixels
+
         # Add text to the image
         self.add_text(draw, post["username"], (188, 78), font_roboto_medium, 24, "#000000")  # Username
-        self.add_text(draw, post["title"], (103, 141), font_roboto, 20, "#000000")  # Title
+        self.add_text(draw, post["title"], (103, 141), font_roboto, 20, "#000000", max_width=max_title_width, max_height=max_title_height)  # Title
         self.add_text(draw, (time_only_hh_mm + "  .  "), (104, 274), font_roboto, 13.4, "#b0b0b0")  # Time
         self.add_text(draw, post["date_posted"], (150, 274), font_roboto, 13.4, "#b0b0b0")  # Date
         self.add_text(draw, str(post["likes"]), (240, 310), font_roboto_light, 12.34, "#666666")  # Likes
@@ -396,10 +447,9 @@ class RedditAPI:
             background_image.save(output_path)
         else:
             print("\033[1m(#)\033[0m Failed to download the profile picture.")
-
-        # Save the modified image to output path
-        output_path = f"temp/{post['id']}.png"
-        background_image.save(output_path)
+            # Save the modified image to output path without the profile picture
+            output_path = f"temp/redit_mockup.png"
+            background_image.save(output_path)
 
 
         # Ask if the user wants to proceed
