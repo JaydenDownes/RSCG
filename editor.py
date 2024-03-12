@@ -4,6 +4,8 @@ from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, AudioFil
 import random
 import math
 import os
+import concurrent.futures
+
 
 def calculate_title_duration(srt_path):
     """
@@ -120,11 +122,12 @@ class VideoEditor:
         Returns:
             None
         """
+        
         print("\033[1m(#)\033[0m Rendering video...")
-        # The maximum time to start the video clip from. (Otherwise the clip will cut to black)
+
         self.upperlimit_time = (
             self.background_video.duration -
-            math.ceil(10*self.clip_duration) / 10
+            math.ceil(10 * self.clip_duration) / 10
         )
         if self.upperlimit_time < 0:
             print("\033[1m(#)\033[0m The background video isn't long enough for the chosen post.")
@@ -133,40 +136,49 @@ class VideoEditor:
             print("\033[1m(#)\033[0m Background video duration:", self.background_video.duration)
             print("\033[1m(#)\033[0m Clip duration:", self.clip_duration)
 
-        # Randomly select a start time for the video clip
         self.start_time = random.randint(0, math.floor(self.upperlimit_time))
 
-        # Clip the video from the start time to the desired end time
-        self.rendered_video = self.background_video.subclip(
-            self.start_time,
-            self.start_time + self.clip_duration)
-        # Set the FPS to 60
-        self.rendered_video = self.rendered_video.set_fps(60)
-        # Set the audio of the video using the WAV file
-        self.rendered_video = self.rendered_video.set_audio(
-            AudioFileClip(self.wav_path))
-        print("\033[1m(#)\033[0m Adding subtitles...")
+        # Use a ThreadPoolExecutor to parallelize the rendering process
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            # Submit the rendering task
+            future = executor.submit(self.render_video, output_path)
 
-        # Create a SubtitlesClip object using the SRT file, and decide whether to animate
-        self.subtitles = SubtitlesClip(
-            self.srt_path,
-            self.__text_generator).set_position(('center', 550))
+        # Get the result (if any)
+        result = future.result()
+        if result:
+            print("\033[1m(#)\033[0m Video rendered successfully!")
+        else:
+            print("\033[1m(#)\033[0m Failed to render video.")
 
-        # Load the image clip
-        image_clip = ImageClip(self.image_path)
-        
-        # Resize the image to fit the width of the background video
-        bg_width = self.background_video.size[0]
-        image_clip = image_clip.resize(width=bg_width)
+    def render_video(self, output_path):
+        try:
+            # Clip the video from the start time to the desired end time
+            self.rendered_video = self.background_video.subclip(
+                self.start_time,
+                self.start_time + self.clip_duration)
+            self.rendered_video = self.rendered_video.set_fps(60)
+            self.rendered_video = self.rendered_video.set_audio(
+                AudioFileClip(self.wav_path))
 
-        # Set the duration for how long the image should appear (same as title duration)
-        title_duration = calculate_title_duration(self.srt_path)
-        image_clip = image_clip.set_duration(title_duration)
+            print("\033[1m(#)\033[0m Adding subtitles...")
 
-        # Overlay the image onto the video
-        self.result = CompositeVideoClip([self.rendered_video, image_clip.set_position(('center', 'center')), self.subtitles])
+            self.subtitles = SubtitlesClip(
+                self.srt_path,
+                self.__text_generator).set_position(('center', 550))
 
-        # Save the video to the outputs folder
-        self.result.write_videofile(
-            output_path, fps=60, codec="libx264", bitrate="8000k")
-        print("\033[1m(#)\033[0m Video rendered successfully!")
+            image_clip = ImageClip(self.image_path)
+
+            bg_width = self.background_video.size[0]
+            image_clip = image_clip.resize(width=bg_width)
+
+            title_duration = calculate_title_duration(self.srt_path)
+            image_clip = image_clip.set_duration(title_duration)
+
+            self.result = CompositeVideoClip([self.rendered_video, image_clip.set_position(('center', 'center')), self.subtitles])
+
+            self.result.write_videofile(
+                output_path, fps=60, codec="libx264", bitrate="8000k")
+            return True
+        except Exception as e:
+            print("\033[1m(#)\033[0m Error rendering video:", e)
+            return False

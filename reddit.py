@@ -6,7 +6,16 @@ from prawcore.exceptions import Forbidden, RequestException
 from praw.exceptions import RedditAPIException
 from ftfy import ftfy
 from tqdm import tqdm
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from tiktokvoice import tts, get_duration, merge_audio_files
+from srt import gen_srt_file
+from editor import VideoEditor
+import textwrap
 import time
+import re
+import os
+import sys
+
 
 class RedditAPI:
     def __init__(self, client_id: str = None, client_secret: str = None, username: str = None, password: str = None):
@@ -93,20 +102,40 @@ class RedditAPI:
         Returns:
             list: A list of filtered sentences.
         """
-        
-        # Grammer fix for better TTS
+        # Grammar fix for better TTS
         self.__unfiltered = ftfy(textstr)
-        # Check words matched with replace words
+
+        # Define the words to check for replacement and their corresponding replacements
         self.__chkWords = ("\n", '."', "UPDATE:", "AITA")
         self.__repWords = (". ", '". ', ". UPDATE:. ", "Am I the asshole")
+
+        # Define a list of swear words and their censored versions
+        swear_words = [
+            "arse", "arsehead", "arsehole", "ass", "asshole", "bastard", "bitch", "bloody", "bollocks",
+            "brotherfucker", "bugger", "bullshit", "child-fucker", "Christ on a bike", "Christ on a cracker",
+            "cock", "cocksucker", "crap", "cunt", "dick", "dickhead", "dyke", "fatherfucker", "frigger",
+            "fuck", "godsdamn", "holy shit", "horseshit", "kike", "motherfucker", "nigga", "nigra",
+            "pigfucker", "piss", "prick", "pussy", "shit", "shite", "sisterfucker", "slut", "whore",
+            "spastic", "turd", "twat", "wanker"
+        ]
+        censored_swear_words = {word: word[0] + '*' * (len(word) - 1) for word in swear_words}
 
         # Replace all occurrences of check words with replace words
         for check, replace in zip(self.__chkWords, self.__repWords):
             self.__unfiltered = self.__unfiltered.replace(check, replace)
 
+        # Replace swear words with censored versions
+        for word, censored_word in censored_swear_words.items():
+            self.__unfiltered = self.__unfiltered.replace(word, censored_word)
+
+        # Replace "M" followed by 1-3 digit numbers with "Male "
+        self.__unfiltered = re.sub(r'M(\d{1,3})', r'Male \1', self.__unfiltered)
+
+        # Replace "F" followed by 1-3 digit numbers with "Female "
+        self.__unfiltered = re.sub(r'F(\d{1,3})', r'Female \1', self.__unfiltered)
+
         # Split content and filter out empty strings, then return
         return [f"{s.strip()}" for s in self.__unfiltered.split(". ") if len(s) > 1]
-
 
     def update_database(self, posts):
         """
@@ -116,7 +145,7 @@ class RedditAPI:
             posts (list): List of Reddit post objects.
         """
         # Initialize tqdm with the total number of posts
-        progress_bar = tqdm(total=len(posts))
+        progress_bar = tqdm(total=len(posts), unit="posts")
         for post in posts:
             self.c.execute("SELECT * FROM posts WHERE id=?", (post.id,))
             existing_post = self.c.fetchone()
@@ -290,6 +319,195 @@ class RedditAPI:
             })
         return self.final
     
+    # Function to add text to the image
+    def add_text(self, draw, text, position, font, size, color, max_width=None, max_height=None):
+        if max_width is not None:
+            font = self.adjust_font_size(draw, text, font, size, max_width, max_height)
+            text = self.wrap_text(draw, text, font, max_width)
+        draw.text(position, text, font=font, fill=color)
+
+    def wrap_text(self, draw, text, font, max_width):
+        wrapper = textwrap.TextWrapper(width=max_width)
+        wrapped_text = wrapper.fill(text)
+        return wrapped_text
+    
+    def adjust_font_size(self, draw, text, font, size, max_width, max_height):
+        font = ImageFont.truetype(font, size)
+        wrapped_text = self.wrap_text(draw, text, font, max_width)
+        text_width, text_height = draw.textsize(wrapped_text, font=font)
+        if max_height is not None and text_height > max_height:
+            # Adjust font size to fit within maximum height
+            size = int((size * max_height) / text_height)
+            font = ImageFont.truetype(font, size)
+        return font
+
+    def generateVideo(self, url):
+        #url = input("Enter the Reddit post URL:\n")
+        # Temporary Code
+        #if not url:
+        #    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
+
+        # Get the post from the URL
+        post = self.get_from_url(url)
+
+        # Split the time string and keep only the hours and minutes
+        time_parts = post["time"].split(":")
+        # Reconstruct the time string with only hours and minutes
+        time_only_hh_mm = ":".join(time_parts[:2])
+
+        # Print to termninal what content we are generating 
+        print("\n \033[1m(#)\033[0m Generating video content for, " + post["username"] + " - " + post["title"] + " - " + post["date_posted"])
+
+        # Print the post details
+        #print("\n \033[1m Subred:\033[0m", post["subreddit"])
+        #print("\033[1m ID:\033[0m", post["id"])
+        #print("\033[1m Title:\033[0m", post["title"])
+        #print("\033[1m Time:\033[0m", time_only_hh_mm)
+        #print("\033[1m Date posted:\033[0m", post["date_posted"])
+        #print("\033[1m No. of lines:\033[0m", len(post["content"]))
+        #print("\033[1m Likes:\033[0m", post["likes"])
+        #print("\033[1m Comments:\033[0m", post["comments"])
+        #print("\033[1m Username:\033[0m", post["username"])
+        #print("\033[1m Profile picture:\033[0m", post["profile_picture_url"])
+        #print("\n")
+
+
+        #print("\033[1m(#)\033[0m Generating Redit Post Mockup")
+        # Load the image from input path
+        background_image_path = "inputs/6365678-ai.png"
+        background_image = Image.open(background_image_path)
+        draw = ImageDraw.Draw(background_image)
+
+        # Define font settings
+        font_roboto_medium = "fonts/Roboto-Medium.ttf"
+        font_roboto = "fonts/Roboto-Regular.ttf"
+        font_roboto_light = "fonts/Roboto-Light.ttf"
+
+        # Add text to the image
+        self.add_text(draw, post["username"], (188, 78), font_roboto_medium, 24, "#000000")  # Username
+        self.add_text(draw, post["title"], (103, 141), font_roboto, 20, "#000000", max_width=501, max_height=68)  # Title
+        self.add_text(draw, (time_only_hh_mm + "  .  "), (104, 274), font_roboto, 13.4, "#b0b0b0")  # Time
+        self.add_text(draw, post["date_posted"], (150, 274), font_roboto, 13.4, "#b0b0b0")  # Date
+        self.add_text(draw, str(post["likes"]), (240, 310), font_roboto_light, 12.34, "#666666")  # Likes
+        self.add_text(draw, str(post["comments"]), (127, 310), font_roboto_light, 12.34, "#666666")  # Comments
+
+        profile_pic_url = post["profile_picture_url"]
+        response = requests.get(profile_pic_url)
+        if response.status_code == 200:
+            profile_pic_path = "temp/profile_pic.png"
+            with open(profile_pic_path, "wb") as f:
+                f.write(response.content)
+
+            # Load profile picture and mask
+            profile_pic = Image.open(profile_pic_path)
+            mask = Image.open('inputs/mask.png').convert('L')
+
+            # Resize profile picture to fit the mask
+            output = ImageOps.fit(profile_pic, mask.size, centering=(0.5, 0.5))
+            output.putalpha(mask)
+
+            # Paste profile picture onto the main image
+            background_image.paste(output, (int(102.72), int(51.6)), output)
+
+            # Save the modified image to output path
+            output_path = f"temp/redit_mockup.png"
+            background_image.save(output_path)
+        else:
+            print("\033[1m(#)\033[0m Failed to download the profile picture.")
+
+        # Save the modified image to output path
+        output_path = f"temp/{post['id']}.png"
+        background_image.save(output_path)
+
+
+        # Ask if the user wants to proceed
+        #proceed = input("Do you want to proceed? (Y/n)\n")
+        #if not proceed:
+        #    proceed = "y"
+        #if proceed.lower() != "y":
+        #    print("\033[1m(#)\033[0m Exiting")
+        #    exit(0)
+        proceed = "y"
+
+        #print("\033[1m(#)\033[0m Generating TTS")
+        # Create the audio files for each sentence using the script
+        script = []
+        shorteneddialoguescript = []
+        content = [post["title"]] + post["content"]
+        new_content = [post["title"]] + post["new_content"]
+
+        # TTS for Voice over
+        with tqdm(total=len(content), desc="Generating TTS", unit="files") as pbar:
+            for item, i in zip(content, range(len(content))):
+                filename = f"temp/temp_{post['id']}_{i}.mp3"
+                tts(item, "en_us_006", filename, 1.15)
+                dur = get_duration(filename)
+                script.append((item, dur))
+                pbar.update(1)
+
+        # Clearing the progress bar from the terminal
+        sys.stdout.write("\033[F")  # Move cursor up one line
+        sys.stdout.write("\033[K")  # Clear line
+
+
+        # Create the srt using the script
+        srt_path = f"inputs/{post['id']}.srt"
+        gen_srt_file(script, srt_path, 0.1)
+
+        # Merge the audio files into one
+        wav_path = f"inputs/{post['id']}.wav"
+        totaldur = merge_audio_files(wav_path, 0.1)
+        #print("\033[1m(#)\033[0m Merged audio duration:", totaldur, "seconds")
+
+        # Create the video
+        video_title = str(post["username"] + " - " + post["title"] + " - " + post["date_posted"])
+        v = VideoEditor(totaldur, srt_path, wav_path, False)
+        v.start_render(f"outputs/{video_title}.mp4")
+
+        # Clean up the temp directory
+        files_to_delete = os.listdir("temp")
+        with tqdm(total=len(files_to_delete), desc="Deleting files", unit="files") as pbar:
+            # Iterate over the files in the directory and delete them
+            for filename in files_to_delete:
+                filepath = os.path.join("temp", filename)
+                try:
+                    if os.path.isfile(filepath):
+                        os.remove(filepath)
+                        pbar.update(1)  # Update progress bar
+                except Exception as e:
+                    print(f"\033[1m(#)\033[0m Error occurred while deleting {filename}: {str(e)}")
+                    print("\n") # Used so the progress bar wont clear the error
+
+        # Clearing the progress bar from the terminal
+        sys.stdout.write("\033[F")  # Move cursor up one line
+        sys.stdout.write("\033[K")  # Clear line
+   
+    def process_unmade_videos(self):
+        """
+        Process posts with video_made set to False.
+        """
+        # Fetch posts where video_made is False
+        self.c.execute("SELECT id, url FROM posts WHERE video_made = 0")
+        unmade_videos = self.c.fetchall()
+        
+        # Iterate through unmade videos and generate video with progress bar
+        for post_id, post_url in tqdm(unmade_videos, desc="Generating Videos", unit="videos"):
+            try:
+                # Call generateVideo method of the current instance
+                self.generateVideo(post_url)
+                
+                # Update video_made to True for the processed post
+                self.c.execute("UPDATE posts SET video_made = 1 WHERE id = ?", (post_id,))
+                self.conn.commit()
+            except Exception as e:
+                print(f"\033[1m(#)\033[0m Error generating video for post ID {post_id}: {e}")
+                self.c.execute("UPDATE posts SET video_made = 3 WHERE id = ?", (post_id,))
+                self.conn.commit()
+                # Log the error or handle it as needed
+                continue  # Move to the next iteration if an error occurs
+
+
+
 
     def check_for_similar_titles(self):
         """
@@ -301,7 +519,7 @@ class RedditAPI:
             authors = self.c.fetchall()
 
             # Initialize tqdm with the total number of authors
-            progress_bar = tqdm(authors, desc="Checking for similar titles", unit="author")
+            progress_bar = tqdm(authors, desc="Checking for similar titles", unit="authors")
 
             # Iterate over each author
             for author in progress_bar:
