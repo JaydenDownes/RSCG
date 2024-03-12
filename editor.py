@@ -4,8 +4,8 @@ from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, AudioFil
 import random
 import math
 import os
-import concurrent.futures
 
+fstl_flag = 0 # Used to keep track of if the first subtitle has passed
 
 def calculate_title_duration(srt_path):
     """
@@ -100,7 +100,17 @@ class VideoEditor:
         Returns:
         TextClip: A TextClip object with the specified text and style.
         """
-        
+        # Access global variable within function
+        global fstl_flag
+       # print("\n \033[1m(#)\033[0m text_generator run, here is previous txt")
+        #print(txt)
+        if fstl_flag < 2:
+            txt = " "  # Set txt to empty string to display nothing
+            fstl_flag += 1  # Let the program know we are now past the first subtitle after 2 counts
+            #print("\n \033[1m(#)\033[0m text Generator set fstl_flag set to 1 and txt to null, here is txt after")
+            #print(txt)
+        #print("\n \033[1m(#)\033[0m and now after the function")
+        #print(txt)
 
         # Reset the Y coordinate of the text to below the screen
         self.y_cord = 1080
@@ -111,44 +121,6 @@ class VideoEditor:
             font='Tahoma-Bold', fontsize=39,
             color='white', method='caption', size=(550, None))
 
-
-    def start_render(self, output_path="outputs/output.mp4"):
-        """
-        Starts the rendering process by creating a video clip with subtitles.
-
-        Args:
-            output_path (str): The path to save the rendered video file. Default is "outputs/output.mp4".
-
-        Returns:
-            None
-        """
-        
-        print("\033[1m(#)\033[0m Rendering video...")
-
-        self.upperlimit_time = (
-            self.background_video.duration -
-            math.ceil(10 * self.clip_duration) / 10
-        )
-        if self.upperlimit_time < 0:
-            print("\033[1m(#)\033[0m The background video isn't long enough for the chosen post.")
-            print("\033[1m(#)\033[0m Please choose a shorter post or use a longer background video.")
-            self.upperlimit_time = 0
-            print("\033[1m(#)\033[0m Background video duration:", self.background_video.duration)
-            print("\033[1m(#)\033[0m Clip duration:", self.clip_duration)
-
-        self.start_time = random.randint(0, math.floor(self.upperlimit_time))
-
-        # Use a ThreadPoolExecutor to parallelize the rendering process
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            # Submit the rendering task
-            future = executor.submit(self.render_video, output_path)
-
-        # Get the result (if any)
-        result = future.result()
-        if result:
-            print("\033[1m(#)\033[0m Video rendered successfully!")
-        else:
-            print("\033[1m(#)\033[0m Failed to render video.")
 
     def render_video(self, output_path):
         try:
@@ -182,3 +154,31 @@ class VideoEditor:
         except Exception as e:
             print("\033[1m(#)\033[0m Error rendering video:", e)
             return False
+
+    def start_render(self, output_path="outputs/output.mp4"):
+        print("\033[1m(#)\033[0m Rendering video...")
+
+        # Reset fstl_flag
+        global fstl_flag
+        fstl_flag = 0
+
+        self.upperlimit_time = (
+            self.background_video.duration -
+            math.ceil(10 * self.clip_duration) / 10
+        )
+        if self.upperlimit_time < 0:
+            print("\033[1m(#)\033[0m The background video isn't long enough for the chosen post.")
+            print("\033[1m(#)\033[0m Please choose a shorter post or use a longer background video.")
+            self.upperlimit_time = 0
+            print("\033[1m(#)\033[0m Background video duration:", self.background_video.duration)
+            print("\033[1m(#)\033[0m Clip duration:", self.clip_duration)
+
+        self.start_time = random.randint(0, math.floor(self.upperlimit_time))
+
+        # Call the render_video method directly
+        result = self.render_video(output_path)
+
+        if result:
+            print("\033[1m(#)\033[0m Video rendered successfully!")
+        else:
+            print("\033[1m(#)\033[0m Failed to render video.")

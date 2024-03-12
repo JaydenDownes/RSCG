@@ -110,9 +110,9 @@ class RedditAPI:
 
         # Define a list of swear words and their censored versions
         swear_words = [
-            "arse", "arsehead", "arsehole", "ass", "asshole", "bastard", "bitch", "bloody", "bollocks",
+            "arse", "arsehead", "arsehole", "asshole", "bastard", "bitch", "bloody", "bollocks",
             "brotherfucker", "bugger", "bullshit", "child-fucker", "Christ on a bike", "Christ on a cracker",
-            "cock", "cocksucker", "crap", "cunt", "dick", "dickhead", "dyke", "fatherfucker", "frigger",
+            "cock", "cocksucker", "crap", "cunt", "dick", "dickhead", "fatherfucker", "frigger",
             "fuck", "godsdamn", "holy shit", "horseshit", "kike", "motherfucker", "nigga", "nigra",
             "pigfucker", "piss", "prick", "pussy", "shit", "shite", "sisterfucker", "slut", "whore",
             "spastic", "turd", "twat", "wanker"
