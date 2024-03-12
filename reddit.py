@@ -10,7 +10,6 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from tiktokvoice import tts, get_duration, merge_audio_files
 from srt import gen_srt_file
 from editor import VideoEditor
-import textwrap
 import time
 import re
 import os
@@ -320,26 +319,9 @@ class RedditAPI:
         return self.final
     
     # Function to add text to the image
-    def add_text(self, draw, text, position, font, size, color, max_width=None, max_height=None):
-        if max_width is not None:
-            font = self.adjust_font_size(draw, text, font, size, max_width, max_height)
-            text = self.wrap_text(draw, text, font, max_width)
-        draw.text(position, text, font=font, fill=color)
-
-    def wrap_text(self, draw, text, font, max_width):
-        wrapper = textwrap.TextWrapper(width=max_width)
-        wrapped_text = wrapper.fill(text)
-        return wrapped_text
-    
-    def adjust_font_size(self, draw, text, font, size, max_width, max_height):
+    def add_text(self, draw, text, position, font, size, color):
         font = ImageFont.truetype(font, size)
-        wrapped_text = self.wrap_text(draw, text, font, max_width)
-        text_width, text_height = draw.textsize(wrapped_text, font=font)
-        if max_height is not None and text_height > max_height:
-            # Adjust font size to fit within maximum height
-            size = int((size * max_height) / text_height)
-            font = ImageFont.truetype(font, size)
-        return font
+        draw.text(position, text, font=font, fill=color)
 
     def generateVideo(self, url):
         #url = input("Enter the Reddit post URL:\n")
@@ -385,7 +367,7 @@ class RedditAPI:
 
         # Add text to the image
         self.add_text(draw, post["username"], (188, 78), font_roboto_medium, 24, "#000000")  # Username
-        self.add_text(draw, post["title"], (103, 141), font_roboto, 20, "#000000", max_width=501, max_height=68)  # Title
+        self.add_text(draw, post["title"], (103, 141), font_roboto, 20, "#000000")  # Title
         self.add_text(draw, (time_only_hh_mm + "  .  "), (104, 274), font_roboto, 13.4, "#b0b0b0")  # Time
         self.add_text(draw, post["date_posted"], (150, 274), font_roboto, 13.4, "#b0b0b0")  # Date
         self.add_text(draw, str(post["likes"]), (240, 310), font_roboto_light, 12.34, "#666666")  # Likes
@@ -503,9 +485,7 @@ class RedditAPI:
                 print(f"\033[1m(#)\033[0m Error generating video for post ID {post_id}: {e}")
                 self.c.execute("UPDATE posts SET video_made = 3 WHERE id = ?", (post_id,))
                 self.conn.commit()
-                # Log the error or handle it as needed
                 continue  # Move to the next iteration if an error occurs
-
 
 
 
