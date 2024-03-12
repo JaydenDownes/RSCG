@@ -33,16 +33,16 @@ class RedditAPI:
         # Raise error if the environment variables are not set
         if not client_id:
             raise ValueError(
-                "REDDIT_CLIENT_ID not set correctly, delete credentials.txt and setup again")
+                "\033[31m\033[1m(#)\033[0m REDDIT_CLIENT_ID not set correctly, delete credentials.txt and setup again")
         if not client_secret:
             raise ValueError(
-                "REDDIT_CLIENT_SECRET not set correctly, delete credentials.txt and setup again")
+                "\033[31m\033[1m(#)\033[0m REDDIT_CLIENT_SECRET not set correctly, delete credentials.txt and setup again")
         if not username:
             raise ValueError(
-                "REDDIT_USERNAME not set correctly, delete credentials.txt and setup again")
+                "\033[31m\033[1m(#)\033[0m REDDIT_USERNAME not set correctly, delete credentials.txt and setup again")
         if not password:
             raise ValueError(
-                "REDDIT_PASSWORD not set correctly, delete credentials.txt and setup again")
+                "\033[31m\033[1m(#)\033[0m REDDIT_PASSWORD not set correctly, delete credentials.txt and setup again")
 
         # Create the Reddit instance
         self.reddit = praw.Reddit(
@@ -144,7 +144,7 @@ class RedditAPI:
             posts (list): List of Reddit post objects.
         """
         # Initialize tqdm with the total number of posts
-        progress_bar = tqdm(total=len(posts), unit="posts")
+        progress_bar = tqdm(total=len(posts), unit="post")
         for post in posts:
             self.c.execute("SELECT * FROM posts WHERE id=?", (post.id,))
             existing_post = self.c.fetchone()
@@ -469,7 +469,7 @@ class RedditAPI:
         new_content = [post["title"]] + post["new_content"]
 
         # TTS for Voice over
-        with tqdm(total=len(content), desc="Generating TTS", unit="files") as pbar:
+        with tqdm(total=len(content), desc="Generating TTS", unit="file") as pbar:
             for item, i in zip(content, range(len(content))):
                 filename = f"temp/temp_{post['id']}_{i}.mp3"
                 tts(item, "en_us_006", filename, 1.15)
@@ -498,7 +498,7 @@ class RedditAPI:
 
         # Clean up the temp directory
         files_to_delete = os.listdir("temp")
-        with tqdm(total=len(files_to_delete), desc="Deleting files", unit="files") as pbar:
+        with tqdm(total=len(files_to_delete), desc="Deleting files", unit="file") as pbar:
             # Iterate over the files in the directory and delete them
             for filename in files_to_delete:
                 filepath = os.path.join("temp", filename)
@@ -507,7 +507,7 @@ class RedditAPI:
                         os.remove(filepath)
                         pbar.update(1)  # Update progress bar
                 except Exception as e:
-                    print(f"\033[1m(#)\033[0m Error occurred while deleting {filename}: {str(e)}")
+                    print(f"\033[31m\033[1m(#)\033[0m Error occurred while deleting {filename}: {str(e)}")
                     print("\n") # Used so the progress bar wont clear the error
 
         # Clearing the progress bar from the terminal
@@ -523,7 +523,7 @@ class RedditAPI:
         unmade_videos = self.c.fetchall()
         
         # Iterate through unmade videos and generate video with progress bar
-        for post_id, post_url in tqdm(unmade_videos, desc="Generating Videos", unit="videos"):
+        for post_id, post_url in tqdm(unmade_videos, desc="Generating Videos", unit="video"):
             try:
                 # Call generateVideo method of the current instance
                 self.generateVideo(post_url)
@@ -532,7 +532,7 @@ class RedditAPI:
                 self.c.execute("UPDATE posts SET video_made = 1 WHERE id = ?", (post_id,))
                 self.conn.commit()
             except Exception as e:
-                print(f"\033[1m(#)\033[0m Error generating video for post ID {post_id}: {e}")
+                print(f"\033[31m\033[1m(#)\033[0m Error generating video for post ID {post_id}: {e}")
                 self.c.execute("UPDATE posts SET video_made = 3 WHERE id = ?", (post_id,))
                 self.conn.commit()
                 continue  # Move to the next iteration if an error occurs
@@ -549,7 +549,7 @@ class RedditAPI:
             authors = self.c.fetchall()
 
             # Initialize tqdm with the total number of authors
-            progress_bar = tqdm(authors, desc="Checking for similar titles", unit="authors")
+            progress_bar = tqdm(authors, desc="Checking for similar titles", unit="author")
 
             # Iterate over each author
             for author in progress_bar:
@@ -601,13 +601,13 @@ class RedditAPI:
                     if response.status_code == 403:
                         continue
                 except RedditAPIException as e:
-                    print(f"\033[1m(#)\033[0m Reddit API error: {e}")
+                    print(f"\033[31m\033[1m(#)\033[0m Reddit API error: {e}")
 
             # Close the progress bar
             progress_bar.close()
 
         except Exception as e:
-            print(f"\n \033[1m(#)\033[0m An unexpected error occurred when looking for update content: {e}")
+            print(f"\n \033[31m\033[1m(#)\033[0m An unexpected error occurred when looking for update content: {e}")
         
         # Implement rate limiting to avoid exceeding API limits
         finally:

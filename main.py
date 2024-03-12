@@ -50,7 +50,7 @@ if __name__ == "__main__":
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
     except subprocess.CalledProcessError:
-        print("\033[1m(#)\033[0m ffmpeg is not installed. Please install ffmpeg to continue.")
+        print("\033[31m\033[1m(#)\033[0m ffmpeg is not installed. Please install ffmpeg to continue.")
         exit(1)
 
     # Check if the credentials file exists
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     # Check if any mp4 files are present in the inputs folder
     if len([i for i in os.listdir("inputs") if i.endswith(".mp4")]) == 0:
-        print("\033[1m(#)\033[0m No input video files found in the inputs folder, Add your input video files to this folder.")
+        print("\033[31m\033[1m(#)\033[0m No input video files found in the inputs folder, Add your input video files to this folder.")
         exit(1)
 
     # Read the credentials from the file
@@ -88,7 +88,7 @@ if __name__ == "__main__":
             creds[2].strip(),  # username
             creds[3].strip())  # password
     except:
-        print("\033[1m(#)\033[0m Credentials not set correctly, delete credentials.txt and setup again.")
+        print("\033[31m\033[1m(#)\033[0m Credentials not set correctly, delete credentials.txt and setup again.")
         exit(1)
 
     print("\033[1m \n", 
