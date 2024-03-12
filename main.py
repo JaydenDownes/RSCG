@@ -5,11 +5,18 @@ from srt import gen_srt_file
 from editor import VideoEditor
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import requests
+import praw
+import sqlite3
+from datetime import datetime
 import datetime
 import subprocess
 import os
 import sys
 
+enable_database_updates = 1
+enable_video_creation = 0
+
+subreddits = ["confession", "tifu", "LetsNotMeet", "AmItheAsshole"]  # Add your desired subreddits here to scan
 
 def setup_credentials():
     print("\n"*10, "-"*30, "\nSetting up the credentials\n")
@@ -121,113 +128,117 @@ if __name__ == "__main__":
     #    print("(#) Exiting")
     #    exit(0)
     proceed = "y"
+    if(enable_database_updates == 1):
+        updated_posts = reddit.get_updated_posts(subreddits)
+        reddit.update_database(updated_posts)
+    
+    if(enable_video_creation == 1):
+        print("\033[1m(#)\033[0m Generating Redit Post Mockup")
+        # Load the image from input path
+        background_image_path = "inputs/6365678-ai.png"
+        background_image = Image.open(background_image_path)
+        draw = ImageDraw.Draw(background_image)
 
-    print("\033[1m(#)\033[0m Generating Redit Post Mockup")
-    # Load the image from input path
-    background_image_path = "inputs/6365678-ai.png"
-    background_image = Image.open(background_image_path)
-    draw = ImageDraw.Draw(background_image)
+        # Define font settings
+        font_roboto_medium = "fonts/Roboto-Medium.ttf"
+        font_roboto = "fonts/Roboto-Regular.ttf"
+        font_roboto_light = "fonts/Roboto-Light.ttf"
 
-    # Define font settings
-    font_roboto_medium = "fonts/Roboto-Medium.ttf"
-    font_roboto = "fonts/Roboto-Regular.ttf"
-    font_roboto_light = "fonts/Roboto-Light.ttf"
+        # Add text to the image
+        add_text(draw, post["username"], (188, 78), font_roboto_medium, 24, "#000000")  # Username
+        add_text(draw, post["title"], (103, 141), font_roboto, 20, "#000000")  # Title
+        add_text(draw, (time_only_hh_mm + "  .  "), (104, 274), font_roboto, 13.4, "#b0b0b0")  # Time
+        add_text(draw, post["date_posted"], (150, 274), font_roboto, 13.4, "#b0b0b0")  # Date
+        add_text(draw, str(post["likes"]), (240, 310), font_roboto_light, 12.34, "#666666")  # Likes
+        add_text(draw, str(post["comments"]), (127, 310), font_roboto_light, 12.34, "#666666")  # Comments
 
-    # Add text to the image
-    add_text(draw, post["username"], (188, 78), font_roboto_medium, 24, "#000000")  # Username
-    add_text(draw, post["title"], (103, 141), font_roboto, 20, "#000000")  # Title
-    add_text(draw, (time_only_hh_mm + "  .  "), (104, 274), font_roboto, 13.4, "#b0b0b0")  # Time
-    add_text(draw, post["date_posted"], (150, 274), font_roboto, 13.4, "#b0b0b0")  # Date
-    add_text(draw, str(post["likes"]), (240, 310), font_roboto_light, 12.34, "#666666")  # Likes
-    add_text(draw, str(post["comments"]), (127, 310), font_roboto_light, 12.34, "#666666")  # Comments
+        profile_pic_url = post["profile_picture_url"]
+        response = requests.get(profile_pic_url)
+        if response.status_code == 200:
+            profile_pic_path = "temp/profile_pic.png"
+            with open(profile_pic_path, "wb") as f:
+                f.write(response.content)
 
-    profile_pic_url = post["profile_picture_url"]
-    response = requests.get(profile_pic_url)
-    if response.status_code == 200:
-        profile_pic_path = "temp/profile_pic.png"
-        with open(profile_pic_path, "wb") as f:
-            f.write(response.content)
+            # Load profile picture and mask
+            profile_pic = Image.open(profile_pic_path)
+            mask = Image.open('inputs/mask.png').convert('L')
 
-        # Load profile picture and mask
-        profile_pic = Image.open(profile_pic_path)
-        mask = Image.open('inputs/mask.png').convert('L')
+            # Resize profile picture to fit the mask
+            output = ImageOps.fit(profile_pic, mask.size, centering=(0.5, 0.5))
+            output.putalpha(mask)
 
-        # Resize profile picture to fit the mask
-        output = ImageOps.fit(profile_pic, mask.size, centering=(0.5, 0.5))
-        output.putalpha(mask)
+            # Paste profile picture onto the main image
+            background_image.paste(output, (int(102.72), int(51.6)), output)
 
-        # Paste profile picture onto the main image
-        background_image.paste(output, (int(102.72), int(51.6)), output)
+            # Save the modified image to output path
+            output_path = f"temp/redit_mockup.png"
+            background_image.save(output_path)
+        else:
+            print("Failed to download the profile picture.")
 
         # Save the modified image to output path
-        output_path = f"temp/redit_mockup.png"
+        output_path = f"temp/{post['id']}.png"
         background_image.save(output_path)
-    else:
-        print("Failed to download the profile picture.")
-
-    # Save the modified image to output path
-    output_path = f"temp/{post['id']}.png"
-    background_image.save(output_path)
 
 
-    # Ask if the user wants to proceed
-    #proceed = input("Do you want to proceed? (Y/n)\n")
-    #if not proceed:
-    #    proceed = "y"
-    #if proceed.lower() != "y":
-    #    print("\033[1m(#)\033[0m Exiting")
-    #    exit(0)
-    proceed = "y"
+        # Ask if the user wants to proceed
+        #proceed = input("Do you want to proceed? (Y/n)\n")
+        #if not proceed:
+        #    proceed = "y"
+        #if proceed.lower() != "y":
+        #    print("\033[1m(#)\033[0m Exiting")
+        #    exit(0)
+        proceed = "y"
 
-    print("\033[1m(#)\033[0m Generating TTS")
-    # Create the audio files for each sentence using the script
-    script = []
-    shorteneddialoguescript = []
-    content = [post["title"]] + post["content"]
-    new_content = [post["title"]] + post["new_content"]
+        print("\033[1m(#)\033[0m Generating TTS")
+        # Create the audio files for each sentence using the script
+        script = []
+        shorteneddialoguescript = []
+        content = [post["title"]] + post["content"]
+        new_content = [post["title"]] + post["new_content"]
 
-    # TTS for Voice over
-    with tqdm(total=len(content), desc="Generating TTS") as pbar:
-        for item, i in zip(content, range(len(content))):
-            filename = f"temp/temp_{post['id']}_{i}.mp3"
-            tts(item, "en_us_006", filename, 1.15)
-            dur = get_duration(filename)
-            script.append((item, dur))
-            pbar.update(1)
+        # TTS for Voice over
+        with tqdm(total=len(content), desc="Generating TTS") as pbar:
+            for item, i in zip(content, range(len(content))):
+                filename = f"temp/temp_{post['id']}_{i}.mp3"
+                tts(item, "en_us_006", filename, 1.15)
+                dur = get_duration(filename)
+                script.append((item, dur))
+                pbar.update(1)
 
-    # Clearing the progress bar from the terminal
-    sys.stdout.write("\033[F")  # Move cursor up one line
-    sys.stdout.write("\033[K")  # Clear line
+        # Clearing the progress bar from the terminal
+        sys.stdout.write("\033[F")  # Move cursor up one line
+        sys.stdout.write("\033[K")  # Clear line
 
 
-    # Create the srt using the script
-    srt_path = f"inputs/{post['id']}.srt"
-    gen_srt_file(script, srt_path, 0.1)
+        # Create the srt using the script
+        srt_path = f"inputs/{post['id']}.srt"
+        gen_srt_file(script, srt_path, 0.1)
 
-    # Merge the audio files into one
-    wav_path = f"inputs/{post['id']}.wav"
-    totaldur = merge_audio_files(wav_path, 0.1)
-    print("\033[1m(#)\033[0m Merged audio duration:", totaldur, "seconds")
+        # Merge the audio files into one
+        wav_path = f"inputs/{post['id']}.wav"
+        totaldur = merge_audio_files(wav_path, 0.1)
+        print("\033[1m(#)\033[0m Merged audio duration:", totaldur, "seconds")
 
-    # Create the video
-    video_title = str(post["title"] + " - " + post["username"] + " - " + post["date_posted"])
-    v = VideoEditor(totaldur, srt_path, wav_path, False)
-    v.start_render(f"outputs/{video_title}.mp4")
+        # Create the video
+        video_title = str(post["username"] + " - " + post["title"] + " - " + post["date_posted"])
+        v = VideoEditor(totaldur, srt_path, wav_path, False)
+        v.start_render(f"outputs/{video_title}.mp4")
 
-    # Clean up the temp directory
-    files_to_delete = os.listdir("temp")
-    with tqdm(total=len(files_to_delete), desc="Deleting files") as pbar:
-        # Iterate over the files in the directory and delete them
-        for filename in files_to_delete:
-            filepath = os.path.join("temp", filename)
-            try:
-                if os.path.isfile(filepath):
-                    os.remove(filepath)
-                    pbar.update(1)  # Update progress bar
-            except Exception as e:
-                print(f"Error occurred while deleting {filename}: {str(e)}")
-                print("\n") # Used so the progress bar wont clear the error
+        # Clean up the temp directory
+        files_to_delete = os.listdir("temp")
+        with tqdm(total=len(files_to_delete), desc="Deleting files") as pbar:
+            # Iterate over the files in the directory and delete them
+            for filename in files_to_delete:
+                filepath = os.path.join("temp", filename)
+                try:
+                    if os.path.isfile(filepath):
+                        os.remove(filepath)
+                        pbar.update(1)  # Update progress bar
+                except Exception as e:
+                    print(f"Error occurred while deleting {filename}: {str(e)}")
+                    print("\n") # Used so the progress bar wont clear the error
 
-    # Clearing the progress bar from the terminal
-    sys.stdout.write("\033[F")  # Move cursor up one line
-    sys.stdout.write("\033[K")  # Clear line
+        # Clearing the progress bar from the terminal
+        sys.stdout.write("\033[F")  # Move cursor up one line
+        sys.stdout.write("\033[K")  # Clear line

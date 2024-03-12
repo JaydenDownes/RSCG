@@ -1,7 +1,8 @@
+import sqlite3
 from datetime import datetime
 import praw
 from ftfy import ftfy
-
+from tqdm import tqdm
 
 class RedditAPI:
     def __init__(self, client_id: str = None, client_secret: str = None, username: str = None, password: str = None):
@@ -40,6 +41,27 @@ class RedditAPI:
             password=password)
         # Set the config to decode HTML entities
         self.reddit.config.decode_html_entities = True
+
+        # Connect to SQLite database
+        self.conn = sqlite3.connect('reddit_posts.db')
+        self.c = self.conn.cursor()
+
+        # Create table if not exists
+        self.c.execute('''CREATE TABLE IF NOT EXISTS posts
+                          (id TEXT PRIMARY KEY,
+                           subreddit TEXT,
+                           title TEXT,
+                           content TEXT,
+                           likes INTEGER,
+                           author TEXT,
+                           created_utc INTEGER,
+                           url TEXT)''')
+        self.conn.commit()
+    
+    def __del__(self):
+        # Close database connection when object is deleted
+        self.conn.close()
+
 
     def __utc_to_datetimestr(self, utc: float):
         """
@@ -81,6 +103,80 @@ class RedditAPI:
         # Split content and filter out empty strings, then return
         return [f"{s.strip()}" for s in self.__unfiltered.split(". ") if len(s) > 1]
 
+    def update_database(self, posts):
+        """
+        Update the database with Reddit posts.
+
+        Args:
+            posts (list): List of Reddit post objects.
+        """
+        # Initialize tqdm with the total number of posts
+        progress_bar = tqdm(total=len(posts))
+        for post in posts:
+            self.c.execute("SELECT * FROM posts WHERE id=?", (post.id,))
+            existing_post = self.c.fetchone()
+            if existing_post:
+                # Check if post content has changed
+                if existing_post[3] != post.selftext or existing_post[6] != post.edited:
+                    # Update existing post in database
+                    self.c.execute("UPDATE posts SET content=?, likes=? WHERE id=?",
+                                (post.selftext, post.score, post.id))
+                    self.conn.commit()
+                    if post.author:
+                        self.generate_post(post.url)
+            else:
+                # Add new post to database
+                self.c.execute("INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                            (post.id, post.subreddit.display_name, post.title, post.selftext,
+                                post.score, post.author.name if post.author else None, 
+                                post.created_utc, post.url))
+                self.conn.commit()
+                if post.author:
+                    self.generate_post(post.url)
+            # Update the progress bar
+            progress_bar.update(1)
+        # Close the progress bar
+        progress_bar.close()
+
+
+
+
+    def generate_post(self, url):
+        """
+        Generate post based on URL.
+
+        Args:
+            url (str): URL of the post.
+        """
+        #print("Generating post for URL:", url)
+        # Your implementation here
+
+    def get_updated_posts(self, subreddits, threshold_likes=1000):
+        """
+        Get updated Reddit posts from specified subreddits.
+
+        Args:
+            subreddits (list): List of subreddit names.
+            threshold_likes (int): Threshold for number of likes.
+
+        Returns:
+            list: List of Reddit post objects.
+        """
+        updated_posts = []
+        for subreddit_name in subreddits:
+            subreddit = self.reddit.subreddit(subreddit_name)
+            for post in subreddit.top(limit=100):  # Limit to avoid hitting API limits
+                if post.score >= threshold_likes:
+                    self.c.execute("SELECT * FROM posts WHERE id=?", (post.id,))
+                    existing_post = self.c.fetchone()
+                    if existing_post:
+                        # Check if post content has changed
+                        if existing_post[3] != post.selftext or existing_post[6] != post.edited:
+                            updated_posts.append(post)
+                    else:
+                        updated_posts.append(post)
+        return updated_posts
+
     def get_from_url(self, url: str):
         """
         Retrieves information about a Reddit post from its URL.
@@ -112,6 +208,7 @@ class RedditAPI:
         # Print both content lists
         ##print("New Content:", new_content)
         
+        # Check to make sure the user has a profile image
         try:
             # Try to get the profile picture URL
             profile_picture_url = self.post.author.icon_img
@@ -119,6 +216,13 @@ class RedditAPI:
             # Use the default profile picture URL
             profile_picture_url = "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png"
 
+        # Check to make sure user has a name and isnt deleted
+        try:
+            # Try to get the users name
+            username = self.post.author.name
+        except AttributeError:
+            # Use the default profile picture URL
+            username = "Deleted User"
 
         return {
             "subreddit": self.post.subreddit.display_name,
@@ -130,7 +234,7 @@ class RedditAPI:
             "new_content": new_content,
             "likes": self.post.score,
             "comments": self.post.num_comments,
-            "username": self.post.author.name, 
+            "username": username, 
             "profile_picture_url": profile_picture_url
 
         }
