@@ -156,3 +156,5 @@ credentials.txt
 /inputs
 /temp
 /reddit_posts.db
+# Ignore .mp3 files in the main directory that are caused by MoviePy
+*.mp3
