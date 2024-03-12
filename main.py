@@ -13,13 +13,19 @@ import subprocess
 import os
 import sys
 
-enable_database_updates = 1
-enable_video_creation = 0
-
+# VARIABLES & ENABLES
 subreddits = ["confession", "tifu", "LetsNotMeet", "AmItheAsshole"]  # Add your desired subreddits here to scan
+enable_database_updates = 1 # Creates a database of top redit posts in the subredits defined above
+enable_check_for_update_content = 1 # Check for similar content posted by users in the database (updates)
+enable_video_creation = 0 # Enable automatic video creation (this is slow)
+
+def clear_terminal():
+    """Clears the terminal screen."""
+    # Clear the terminal screen based on the operating system
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def setup_credentials():
-    print("\n"*10, "-"*30, "\nSetting up the credentials\n")
+    print("\n", "\nSetting up the credentials\n")
     print("You will need to create a Reddit app and get the client id and client secret\n")
     print("You will also need to enter your Reddit username and password\n")
     print("These credentials will be stored in a file called credentials.txt\n")
@@ -41,6 +47,9 @@ def add_text(draw, text, position, font, size, color):
 
 
 if __name__ == "__main__":
+    # Clear the terminal for preogram start
+    clear_terminal()
+
     # Check if ffmpeg is installed
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
@@ -87,52 +96,50 @@ if __name__ == "__main__":
         exit(1)
 
     print("\033[1m \n", 
-        "  ___  ___  ___ ___  \n ", 
-        "| _ \/ __|/ __/ __| \n ", 
-        "|   /\__ \ (_| (_ | \n ", 
-        "|_|_\|___/\___\___| \n ", 
+        "  ___ ___ ___  ___ ___ _____   ___  ___ ___   \n ", 
+        " | _ \ __|   \|   \_ _|_   _| / __|/ __/ __| \n ", 
+        " |   / _|| |) | |) | |  | |   \__ \ (_| (_ | \n ", 
+        " |_|_\___|___/|___/___| |_|   |___/\___\___| \n ", 
         "Reddit Short-Form Content Generator V2.0 \033[0m \n ")
-
-    #url = input("Enter the Reddit post URL:\n")
-    # Temporary Code
-    #if not url:
-    #    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
-    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
-
-    # Get the post from the URL
-    post = reddit.get_from_url(url)
-
-    # Split the time string and keep only the hours and minutes
-    time_parts = post["time"].split(":")
-    # Reconstruct the time string with only hours and minutes
-    time_only_hh_mm = ":".join(time_parts[:2])
-
-    # Print the post details
-    print("\033[1m Subred:\033[0m", post["subreddit"])
-    print("\033[1m ID:\033[0m", post["id"])
-    print("\033[1m Title:\033[0m", post["title"])
-    print("\033[1m Time:\033[0m", time_only_hh_mm)
-    print("\033[1m Date posted:\033[0m", post["date_posted"])
-    print("\033[1m No. of lines:\033[0m", len(post["content"]))
-    print("\033[1m Likes:\033[0m", post["likes"])
-    print("\033[1m Comments:\033[0m", post["comments"])
-    print("\033[1m Username:\033[0m", post["username"])
-    print("\033[1m Profile picture:\033[0m", post["profile_picture_url"])
-    print("\n")
-
-    # Ask if the user wants to proceed
-    #proceed = input("Do you want to proceed? (Y/n)\n")
-    #if not proceed:
-    #    proceed = "y"
-    #if proceed.lower() != "y":
-    #    print("(#) Exiting")
-    #    exit(0)
-    proceed = "y"
+    
     if(enable_database_updates == 1):
+        print("\n \033[1m(#)\033[0m Searching through Reddit for posts") 
         updated_posts = reddit.get_updated_posts(subreddits)
         reddit.update_database(updated_posts)
+
+    if(enable_check_for_update_content == 1):
+        print("\n \033[1m(#)\033[0m Searching through Reddit for update content, this can be slow due to API limits") 
+        reddit.check_for_similar_titles()
     
     if(enable_video_creation == 1):
+        #url = input("Enter the Reddit post URL:\n")
+        # Temporary Code
+        #if not url:
+        #    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
+        url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
+
+        # Get the post from the URL
+        post = reddit.get_from_url(url)
+
+        # Split the time string and keep only the hours and minutes
+        time_parts = post["time"].split(":")
+        # Reconstruct the time string with only hours and minutes
+        time_only_hh_mm = ":".join(time_parts[:2])
+
+        # Print the post details
+        print("\n \033[1m Subred:\033[0m", post["subreddit"])
+        print("\033[1m ID:\033[0m", post["id"])
+        print("\033[1m Title:\033[0m", post["title"])
+        print("\033[1m Time:\033[0m", time_only_hh_mm)
+        print("\033[1m Date posted:\033[0m", post["date_posted"])
+        print("\033[1m No. of lines:\033[0m", len(post["content"]))
+        print("\033[1m Likes:\033[0m", post["likes"])
+        print("\033[1m Comments:\033[0m", post["comments"])
+        print("\033[1m Username:\033[0m", post["username"])
+        print("\033[1m Profile picture:\033[0m", post["profile_picture_url"])
+        print("\n")
+
+
         print("\033[1m(#)\033[0m Generating Redit Post Mockup")
         # Load the image from input path
         background_image_path = "inputs/6365678-ai.png"

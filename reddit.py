@@ -1,8 +1,12 @@
+import requests
 import sqlite3
 from datetime import datetime
 import praw
+from prawcore.exceptions import Forbidden, RequestException
+from praw.exceptions import RedditAPIException
 from ftfy import ftfy
 from tqdm import tqdm
+import time
 
 class RedditAPI:
     def __init__(self, client_id: str = None, client_secret: str = None, username: str = None, password: str = None):
@@ -103,6 +107,7 @@ class RedditAPI:
         # Split content and filter out empty strings, then return
         return [f"{s.strip()}" for s in self.__unfiltered.split(". ") if len(s) > 1]
 
+
     def update_database(self, posts):
         """
         Update the database with Reddit posts.
@@ -122,24 +127,36 @@ class RedditAPI:
                     self.c.execute("UPDATE posts SET content=?, likes=? WHERE id=?",
                                 (post.selftext, post.score, post.id))
                     self.conn.commit()
-                    if post.author:
-                        self.generate_post(post.url)
+                    self.generate_post(post.url)
+                    # Check if edited content is different
+                    if existing_post[3] != post.selftext:
+                        # If edited content is different, create a new entry in the database
+                        self.c.execute("INSERT INTO posts (id, subreddit, title, content, likes, author, created_utc, url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                    (post.id, post.subreddit.display_name, post.title, post.selftext,
+                                        post.score, post.author.name if post.author else None,
+                                        post.created_utc, post.url))
+                        self.conn.commit()
+                        # Print statement for the new entry with edited content
+                        print(f"\n \033[1m(#)\033[0m A new entry has been added for edited content by {post.author} titled '{post.title}' posted on {post.created_utc}")
             else:
                 # Add new post to database
                 self.c.execute("INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                             (post.id, post.subreddit.display_name, post.title, post.selftext,
-                                post.score, post.author.name if post.author else None, 
+                                post.score, post.author.name if post.author else None,
                                 post.created_utc, post.url))
                 self.conn.commit()
-                if post.author:
-                    self.generate_post(post.url)
+                self.generate_post(post.url)
             # Update the progress bar
             progress_bar.update(1)
         # Close the progress bar
         progress_bar.close()
 
-
-
+    def fetch_all_posts(self):
+        """
+        Fetch all posts from the database.
+        """
+        self.c.execute("SELECT * FROM posts")
+        return self.c.fetchall()
 
     def generate_post(self, url):
         """
@@ -272,3 +289,78 @@ class RedditAPI:
                 "content": self.__filter_content(iter_post.selftext)
             })
         return self.final
+    
+
+    def check_for_similar_titles(self):
+        """
+        Check for new posts with similar titles by previous posters in the database.
+        """
+        try:
+            # Fetch all authors from the database
+            self.c.execute("SELECT DISTINCT author FROM posts")
+            authors = self.c.fetchall()
+
+            # Initialize tqdm with the total number of authors
+            progress_bar = tqdm(authors, desc="Checking for similar titles", unit="author")
+
+            # Iterate over each author
+            for author in progress_bar:
+                author = author[0]
+                # Fetch all posts by the author
+                self.c.execute("SELECT title FROM posts WHERE author=?", (author,))
+                titles = self.c.fetchall()
+                titles = [title[0] for title in titles]  # Extract titles from tuples
+
+                # Fetch new posts by the author from Reddit API
+                url = f"https://www.reddit.com/user/{author}/submitted/.json"
+                headers = {"User-Agent": "YourBot/1.0"}
+
+                try:
+                    response = requests.get(url, headers=headers)
+                    response.raise_for_status()  # Raise exception for 4XX and 5XX status codes
+                    data = response.json()
+
+                    # Parse the JSON data and process the submissions
+                    for post in data["data"]["children"]:
+                        post_data = post["data"]
+                        post_title = post_data["title"]
+                        post_id = post_data["id"]
+                        post_subreddit = post_data["subreddit"]
+                        post_selftext = post_data["selftext"]
+                        post_score = post_data["score"]
+                        post_author = post_data["author"]
+                        post_created_utc = post_data["created_utc"]
+                        post_url = post_data["url"]
+
+                        if any(title.lower() in post_title.lower() for title in titles):
+                            # If similar title found, check if post already exists in the database
+                            self.c.execute("SELECT * FROM posts WHERE id=?", (post_id,))
+                            existing_post = self.c.fetchone()
+                            if not existing_post:
+                                # If post doesn't exist, add it to the database
+                                self.c.execute("INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                    (post_id, post_subreddit, post_title, post_selftext,
+                                        post_score, post_author if post_author else None,
+                                        post_created_utc, post_url))
+                                self.conn.commit()
+                                # Generate post for the new update
+                                self.generate_post(post_url)
+                                # Print statement for the new update
+                                print(f"\n \033[1m(#)\033[0m A new update post has been found by {post_author} titled '{post_title}' posted on {post_created_utc}")
+
+                except requests.RequestException as e:
+                    # Suppress printing for 403 Forbidden errors
+                    if response.status_code == 403:
+                        continue
+                except RedditAPIException as e:
+                    print(f"\033[1m(#)\033[0m Reddit API error: {e}")
+
+            # Close the progress bar
+            progress_bar.close()
+
+        except Exception as e:
+            print(f"\n \033[1m(#)\033[0m An unexpected error occurred when looking for update content: {e}")
+        
+        # Implement rate limiting to avoid exceeding API limits
+        finally:
+            time.sleep(0.5)  # Sleep for 0.5 seconds to avoid rate limiting
