@@ -201,43 +201,56 @@ class VideoEditor:
         except Exception as e:
             print("\033[31m\033[1m(#)\033[0m Error occurred while rendering video:", e)
 
-    # Used to convert aspect ratio (crop) videos
+
     def aspect_converter(self, input_directory="downloads/", output_directory="inputs/", output_width=1080, output_height=1920):
+        """
+        Convert videos to a specified aspect ratio.
+
+        Args:
+            input_directory (str): The directory containing input video files.
+            output_directory (str): The directory where output video files will be saved.
+            output_width (int): The desired width of the output video.
+            output_height (int): The desired height of the output video.
+        """
         # Iterate over all .mp4 files in the input directory
         for filename in os.listdir(input_directory):
             if filename.endswith(".mp4"):
                 input_file = os.path.join(input_directory, filename)
                 
-                # Load the video clip
-                clip = VideoFileClip(input_file)
-                
-                # Calculate cropping parameters to maintain aspect ratio and center the content
-                input_aspect_ratio = clip.size[0] / clip.size[1]
-                output_aspect_ratio = output_width / output_height
-                
-                if input_aspect_ratio > output_aspect_ratio:
-                    # Calculate cropping dimensions based on height
-                    crop_height = clip.size[1]
-                    crop_width = int(crop_height * output_aspect_ratio)
-                else:
-                    # Calculate cropping dimensions based on width
-                    crop_width = clip.size[0]
-                    crop_height = int(crop_width / output_aspect_ratio)
-                
-                # Calculate center coordinates
-                x_center = clip.size[0] / 2
-                y_center = clip.size[1] / 2
-                
-                # Apply cropping
-                cropped_clip = crop(clip, width=crop_width, height=crop_height, x_center=x_center, y_center=y_center)
-                
-                # Resize the cropped clip to the desired output dimensions
-                resized_clip = cropped_clip.resize(width=output_width, height=output_height)
-                
-                # Output file path
-                output_file = os.path.join(output_directory, filename)
-                
-                # Write the cropped and resized video to the output file
-                resized_clip.write_videofile(output_file, codec="libx264")
+                try:
+                    # Load the video clip
+                    clip = VideoFileClip(input_file)
+                    
+                    # Calculate cropping parameters to maintain aspect ratio and center the content
+                    input_aspect_ratio = clip.size[0] / clip.size[1]
+                    output_aspect_ratio = output_width / output_height
+                    
+                    if input_aspect_ratio > output_aspect_ratio:
+                        # Calculate cropping dimensions based on height
+                        crop_height = clip.size[1]
+                        crop_width = int(crop_height * output_aspect_ratio)
+                    else:
+                        # Calculate cropping dimensions based on width
+                        crop_width = clip.size[0]
+                        crop_height = int(crop_width / output_aspect_ratio)
+                    
+                    # Calculate center coordinates
+                    x_center = clip.size[0] / 2
+                    y_center = clip.size[1] / 2
+                    
+                    # Apply cropping
+                    cropped_clip = crop(clip, width=crop_width, height=crop_height, x_center=x_center, y_center=y_center)
+                    
+                    # Resize the cropped clip to the desired output dimensions
+                    resized_clip = cropped_clip.resize(width=output_width, height=output_height)
+                    
+                    # Output file path
+                    output_file = os.path.join(output_directory, filename)
+                    
+                    # Write the cropped and resized video to the output file
+                    resized_clip.write_videofile(output_file, codec="libx264")
 
-                print(f"Cropping and resizing successful: {input_file} -> {output_file}")
+                    print(f"\033[1m(#)\033[0m Cropping and resizing successful: {input_file} -> {output_file}")
+
+                except Exception as e:
+                    print(f"\033[31m\033[1m(#)\033[0m Error cropping video {input_file}: {e}")
