@@ -1,9 +1,9 @@
-from moviepy.video.VideoClip import ImageClip
-from moviepy.video.tools.subtitles import SubtitlesClip
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, AudioFileClip
-import random
-import math
-import os
+from moviepy.video.VideoClip import ImageClip  # Used for creating video clips from images.
+from moviepy.video.tools.subtitles import SubtitlesClip  # Provides tools for creating subtitles in video clips.
+from moviepy.editor import (VideoFileClip, TextClip, CompositeVideoClip, AudioFileClip)  # Provides various video editing functionalities such as combining clips, adding text, etc.
+import random  # Provides functions for generating random numbers or selecting random items from a list.
+import math  # Provides mathematical functions and constants.
+import os  # Provides functions for interacting with the operating system.
 
 fstl_flag = 0 # Used to keep track of if the first subtitle has passed
 
@@ -143,7 +143,7 @@ class VideoEditor:
             None
         """
         try:
-            print("\033[1m(#)\033[0m Rendering video...")
+            print("\033[1m(#)\033[0m Rendering video...\n")
             # Reset fstl_flag to remove first subtitle for reddit mockup
             global fstl_flag
             fstl_flag = 0
@@ -153,7 +153,7 @@ class VideoEditor:
 
             # Check if the background video duration is sufficient for the clip duration
             if background_duration < self.clip_duration:
-                print("\033[31m\033[1m(#)\033[0m The background video isn't long enough for the chosen post, please choose a shorter post or use a longer background video.")
+                print("\033[31m\033[1m(#)\033[0m The background video isn't long enough for the chosen post, please choose a shorter post or use a longer background video.\n")
                 print("\033[1m(#)\033[0m Background video duration:", background_duration)
                 print("\033[1m(#)\033[0m Clip duration:", self.clip_duration)
                 return  # Exit the method if the background video is too short
@@ -170,7 +170,7 @@ class VideoEditor:
             # Set the audio of the video using the WAV file
             self.rendered_video = self.rendered_video.set_audio(
                 AudioFileClip(self.wav_path))
-            print("\033[1m(#)\033[0m Adding subtitles...")
+            print("\033[1m(#)\033[0m Adding subtitles...\n")
 
             # Create a SubtitlesClip object using the SRT file, and decide whether to animate
             self.subtitles = SubtitlesClip(
@@ -195,7 +195,7 @@ class VideoEditor:
 
             # Save the video to the outputs folder
             self.result.write_videofile(
-                output_path, fps=60, codec="libx264", bitrate="8000k")
-            print("\033[1m(#)\033[0m Video rendered successfully!")
+                output_path, fps=60, codec="libx264", bitrate="8000k", verbose="false")
+            print("\033[1m(#)\033[0m Video rendered successfully!\n")
         except Exception as e:
             print("\033[31m\033[1m(#)\033[0m Error occurred while rendering video:", e)

@@ -1,19 +1,20 @@
-import requests
-import sqlite3
-from datetime import datetime
-import praw
-from prawcore.exceptions import Forbidden, RequestException
-from praw.exceptions import RedditAPIException
-from ftfy import ftfy
-from tqdm import tqdm
-from PIL import Image, ImageDraw, ImageFont, ImageOps
-from tiktokvoice import tts, get_duration, merge_audio_files
-from srt import gen_srt_file
-from editor import VideoEditor
-import time
-import re
-import os
-import sys
+import requests  # Used for making HTTP requests, typically for API interactions.
+import sqlite3  # Provides a lightweight disk-based database that doesn’t require a separate server process.
+from datetime import datetime  # Provides classes for manipulating dates and times.
+import praw  # Python Reddit API Wrapper, used for interacting with the Reddit API.
+from prawcore.exceptions import Forbidden, RequestException  # Exceptions specific to the PRAW library.
+from praw.exceptions import RedditAPIException  # Exceptions specific to the PRAW library.
+from ftfy import ftfy  # Fixes mojibake and other glitches in Unicode text.
+from tqdm import tqdm  # Provides a progress bar to show the progress of iterative tasks.
+from PIL import Image, ImageDraw, ImageFont, ImageOps  # Python Imaging Library, used for image manipulation.
+from tiktokvoice import tts, get_duration, merge_audio_files  # Functions for creating and manipulating audio files.
+from srt import gen_srt_file  # Library for working with SubRip (SRT) subtitle files.
+from editor import VideoEditor  # Custom module for video editing tasks.
+import time  # Provides various time-related functions.
+import re  # Provides support for regular expressions (regex).
+import os  # Provides functions for interacting with the operating system.
+import sys  # Provides access to some variables used or maintained by the Python interpreter and to functions that interact strongly with the interpreter.
+
 
 
 class RedditAPI:
@@ -33,16 +34,16 @@ class RedditAPI:
         # Raise error if the environment variables are not set
         if not client_id:
             raise ValueError(
-                "\033[31m\033[1m(#)\033[0m REDDIT_CLIENT_ID not set correctly, delete credentials.txt and setup again")
+                "\033[31m\033[1m(#)\033[0m REDDIT_CLIENT_ID not set correctly, delete credentials.txt and setup again.\n")
         if not client_secret:
             raise ValueError(
-                "\033[31m\033[1m(#)\033[0m REDDIT_CLIENT_SECRET not set correctly, delete credentials.txt and setup again")
+                "\033[31m\033[1m(#)\033[0m REDDIT_CLIENT_SECRET not set correctly, delete credentials.txt and setup again.\n")
         if not username:
             raise ValueError(
-                "\033[31m\033[1m(#)\033[0m REDDIT_USERNAME not set correctly, delete credentials.txt and setup again")
+                "\033[31m\033[1m(#)\033[0m REDDIT_USERNAME not set correctly, delete credentials.txt and setup again.\n")
         if not password:
             raise ValueError(
-                "\033[31m\033[1m(#)\033[0m REDDIT_PASSWORD not set correctly, delete credentials.txt and setup again")
+                "\033[31m\033[1m(#)\033[0m REDDIT_PASSWORD not set correctly, delete credentials.txt and setup again.\n")
 
         # Create the Reddit instance
         self.reddit = praw.Reddit(
@@ -55,10 +56,10 @@ class RedditAPI:
         self.reddit.config.decode_html_entities = True
 
         # Connect to SQLite database
-        self.conn = sqlite3.connect('reddit_posts.db')
+        self.conn = sqlite3.connect('database.db')
         self.c = self.conn.cursor()
 
-        # Create table if not exists
+        # Create posts table if not exists
         self.c.execute('''CREATE TABLE IF NOT EXISTS posts
                           (id TEXT PRIMARY KEY,
                            subreddit TEXT,
@@ -68,6 +69,20 @@ class RedditAPI:
                            author TEXT,
                            created_utc INTEGER,
                            url TEXT)''')
+        
+        # Create 'subreddits' table
+        self.c.execute('''CREATE TABLE IF NOT EXISTS subreddits (
+                            id INTEGER PRIMARY KEY,
+                            name TEXT UNIQUE,
+                            enabled INTEGER DEFAULT 1
+                        )''')
+
+        # Create 'filters' table
+        self.c.execute('''CREATE TABLE IF NOT EXISTS filters (
+                            id INTEGER PRIMARY KEY,
+                            word TEXT UNIQUE
+                        )''')
+
         self.conn.commit()
     
     def __del__(self):
@@ -101,6 +116,14 @@ class RedditAPI:
         Returns:
             list: A list of filtered sentences.
         """
+
+        # Fetch swear words from the 'filters' table
+        self.c.execute("SELECT word FROM filters")
+        swear_words = [row[0] for row in self.c.fetchall()]
+
+        # Close database connection
+        self.conn.close()
+
         # Grammar fix for better TTS
         self.__unfiltered = ftfy(textstr)
 
@@ -108,16 +131,8 @@ class RedditAPI:
         self.__chkWords = ("\n", '."', "UPDATE:", "AITA")
         self.__repWords = (". ", '". ', ". UPDATE:. ", "Am I the asshole")
 
-        # Define a list of swear words and their censored versions
-        swear_words = [
-            "arse", "arsehead", "arsehole", "asshole", "bastard", "bitch", "bloody", "bollocks",
-            "brotherfucker", "bugger", "bullshit", "child-fucker", "Christ on a bike", "Christ on a cracker",
-            "cock", "cocksucker", "crap", "cunt", "dick", "dickhead", "fatherfucker", "frigger",
-            "fuck", "godsdamn", "holy shit", "horseshit", "kike", "motherfucker", "nigga", "nigra",
-            "pigfucker", "piss", "prick", "pussy", "shit", "shite", "sisterfucker", "slut", "whore",
-            "spastic", "turd", "twat", "wanker"
-        ]
-        censored_swear_words = {word: word[0] + '*' * (len(word) - 1) for word in swear_words}
+        # Define a dictionary to store censored versions of swear words
+        censored_swear_words = {word: word[0] + '*' * (len(word) - 2) + word[-1] for word in swear_words}
 
         # Replace all occurrences of check words with replace words
         for check, replace in zip(self.__chkWords, self.__repWords):
@@ -165,7 +180,7 @@ class RedditAPI:
                                         post.created_utc, post.url))
                         self.conn.commit()
                         # Print statement for the new entry with edited content
-                        print(f"\n \033[1m(#)\033[0m A new entry has been added for edited content by {post.author} titled '{post.title}' posted on {post.created_utc}")
+                        print(f"\033[1m(#)\033[0m A new entry has been added for edited content by {post.author} titled '{post.title}' posted on {post.created_utc}.\n")
             else:
                 # Add new post to database
                 self.c.execute("INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -196,9 +211,9 @@ class RedditAPI:
         #print("Generating post for URL:", url)
         # Your implementation here
 
-    def get_updated_posts(self, subreddits, threshold_likes=1000):
+    def get_updated_posts(self, threshold_likes=1000):
         """
-        Get updated Reddit posts from specified subreddits.
+        Get updated Reddit posts from subreddits.
 
         Args:
             subreddits (list): List of subreddit names.
@@ -208,6 +223,7 @@ class RedditAPI:
             list: List of Reddit post objects.
         """
         updated_posts = []
+        subreddits = self.view_subreddits()
         for subreddit_name in subreddits:
             subreddit = self.reddit.subreddit(subreddit_name)
             for post in subreddit.top(limit=100):  # Limit to avoid hitting API limits
@@ -371,11 +387,6 @@ class RedditAPI:
         return
 
     def generateVideo(self, url):
-        #url = input("Enter the Reddit post URL:\n")
-        # Temporary Code
-        #if not url:
-        #    url = "https://www.reddit.com/r/confessions/comments/1bbleao/i_jaywalked_once/"
-
         # Get the post from the URL
         post = self.get_from_url(url)
 
@@ -446,7 +457,7 @@ class RedditAPI:
             output_path = f"temp/redit_mockup.png"
             background_image.save(output_path)
         else:
-            print("\033[1m(#)\033[0m Failed to download the profile picture.")
+            print("\033[1m(#)\033[0m Failed to download the profile picture, using default.\n")
             # Save the modified image to output path without the profile picture
             output_path = f"temp/redit_mockup.png"
             background_image.save(output_path)
@@ -532,11 +543,32 @@ class RedditAPI:
                 self.c.execute("UPDATE posts SET video_made = 1 WHERE id = ?", (post_id,))
                 self.conn.commit()
             except Exception as e:
-                print(f"\033[31m\033[1m(#)\033[0m Error generating video for post ID {post_id}: {e}")
+                print(f"\033[31m\033[1m(#)\033[0m Error generating video for post ID {post_id}: {e}\n")
                 self.c.execute("UPDATE posts SET video_made = 3 WHERE id = ?", (post_id,))
                 self.conn.commit()
                 continue  # Move to the next iteration if an error occurs
 
+
+    def retry_errors(self):
+        """
+        Retry generating videos for posts that previously encountered errors.
+        """
+        # Fetch posts where video_made is 3 (failed)
+        self.c.execute("SELECT id, url FROM posts WHERE video_made = 3")
+        error_videos = self.c.fetchall()
+        
+        # Iterate through error videos and attempt to generate video with progress bar
+        for post_id, post_url in tqdm(error_videos, desc="Retrying Errors", unit="video"):
+            try:
+                # Call generateVideo method of the current instance
+                self.generateVideo(post_url)
+                
+                # Update video_made to 1 for the successfully processed post
+                self.c.execute("UPDATE posts SET video_made = 1 WHERE id = ?", (post_id,))
+                self.conn.commit()
+            except Exception as e:
+                print(f"\033[31m\033[1m(#)\033[0m Error retrying video for post ID {post_id}: {e}\n")
+                continue  # Move to the next iteration if an error occurs
 
 
     def check_for_similar_titles(self):
@@ -561,7 +593,7 @@ class RedditAPI:
 
                 # Fetch new posts by the author from Reddit API
                 url = f"https://www.reddit.com/user/{author}/submitted/.json"
-                headers = {"User-Agent": "YourBot/1.0"}
+                headers = {"User-Agent": "ReditStoryCapture/1.0"}
 
                 try:
                     response = requests.get(url, headers=headers)
@@ -594,21 +626,120 @@ class RedditAPI:
                                 # Generate post for the new update
                                 self.generate_post(post_url)
                                 # Print statement for the new update
-                                print(f"\n \033[1m(#)\033[0m A new update post has been found by {post_author} titled '{post_title}' posted on {post_created_utc}")
+                                print(f"\033[1m(#)\033[0m A new update post has been found by {post_author} titled '{post_title}' posted on {post_created_utc}.\n")
 
                 except requests.RequestException as e:
                     # Suppress printing for 403 Forbidden errors
                     if response.status_code == 403:
                         continue
                 except RedditAPIException as e:
-                    print(f"\033[31m\033[1m(#)\033[0m Reddit API error: {e}")
+                    print(f"\033[31m\033[1m(#)\033[0m Reddit API error: {e}.\n")
 
             # Close the progress bar
             progress_bar.close()
 
         except Exception as e:
-            print(f"\n \033[31m\033[1m(#)\033[0m An unexpected error occurred when looking for update content: {e}")
-        
+            print(f"\033[31m\033[1m(#)\033[0m An unexpected error occurred when looking for update content: {e}.\n")
         # Implement rate limiting to avoid exceeding API limits
         finally:
             time.sleep(0.5)  # Sleep for 0.5 seconds to avoid rate limiting
+
+
+    def clear_database_entries(self):
+        """
+        Clear all entries in the database.
+        """
+        try:
+            # Clear all entries from the 'posts' table
+            self.c.execute("DELETE FROM posts")
+            self.conn.commit()
+            print("\033[1m(#)\033[0m All entries cleared from the database.")
+        except Exception as e:
+            print(f"\033[31m\033[1m(#)\033[0m Error clearing database entries: {e}\n")
+
+
+    def remove_entry_by_id(self, post_id):
+        """
+        Remove an entry from the database by its post ID.
+        """
+        try:
+            # Remove the entry with the specified post ID from the 'posts' table
+            self.c.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+            self.conn.commit()
+            print("\033[1m(#)\033[0m Entry with post ID", post_id, "removed from the database.")
+        except Exception as e:
+            print(f"\033[31m\033[1m(#)\033[0m Error removing entry with post ID {post_id}: {e}\n")
+
+    def view_subreddits(self):
+        """
+        View all entries in the 'subreddits' table.
+        """
+        self.c.execute("SELECT * FROM subreddits")
+        return self.c.fetchall()
+
+    def add_subreddit(self, name, enabled=1):
+        """
+        Add a new subreddit entry to the 'subreddits' table.
+        """
+        try:
+            self.c.execute("INSERT INTO subreddits (name, enabled) VALUES (?, ?)", (name, enabled))
+            self.conn.commit()
+            print("\033[1m(#)\033[0m Subreddit", name, "added to the 'subreddits' table.")
+        except sqlite3.IntegrityError:
+            print(f"\033[31m\033[1m(#)\033[0m Subreddit {name} already exists in the 'subreddits' table.\n")
+
+    def remove_subreddit(self, name):
+        """
+        Remove a subreddit entry from the 'subreddits' table.
+        """
+        try:
+            self.c.execute("DELETE FROM subreddits WHERE name = ?", (name,))
+            self.conn.commit()
+            print("\033[1m(#)\033[0m Subreddit", name, "removed from the 'subreddits' table.")
+        except sqlite3.IntegrityError:
+            print(f"\033[31m\033[1m(#)\033[0m Subreddit {name} does not exist in the 'subreddits' table.\n")
+
+    def disable_subreddit(self, subreddit_name):
+        """
+        Disable a subreddit by setting its 'enabled' status to 0 in the database.
+
+        Args:
+            subreddit_name (str): The name of the subreddit to disable.
+        """
+        try:
+            # Update the 'enabled' status of the specified subreddit to 0
+            self.c.execute("UPDATE subreddits SET enabled = 0 WHERE subreddit = ?", (subreddit_name,))
+            self.conn.commit()
+            print(f"Subreddit '{subreddit_name}' disabled successfully.")
+        except sqlite3.Error as e:
+            print(f"Error disabling subreddit '{subreddit_name}': {e}")        
+
+
+    def view_filters(self):
+        """
+        View all entries in the 'filters' table.
+        """
+        self.c.execute("SELECT * FROM filters")
+        return self.c.fetchall()
+
+    def add_filter(self, word):
+        """
+        Add a new word entry to the 'filters' table.
+        """
+        try:
+            self.c.execute("INSERT INTO filters (word) VALUES (?)", (word,))
+            self.conn.commit()
+            print("\033[1m(#)\033[0m Filter word", word, "added to the 'filters' table.")
+        except sqlite3.IntegrityError:
+            print(f"\033[31m\033[1m(#)\033[0m Filter word {word} already exists in the 'filters' table.\n")
+
+    def remove_filter(self, word):
+        """
+        Remove a word entry from the 'filters' table.
+        """
+        try:
+            self.c.execute("DELETE FROM filters WHERE word = ?", (word,))
+            self.conn.commit()
+            print("\033[1m(#)\033[0m Filter word", word, "removed from the 'filters' table.")
+        except sqlite3.IntegrityError:
+            print(f"\033[31m\033[1m(#)\033[0m Filter word {word} does not exist in the 'filters' table.\n")

@@ -4,29 +4,17 @@
 # version: 1.0
 # credits: https://github.com/oscie57/tiktok-voice
 
-#! Personal Note: Added pydub for speed control - Krishpkreame
-#! And os for file handling to merge
-import os
-import time
-from pydub import AudioSegment
-import threading
-import requests
-import base64
-from tqdm import tqdm
-import sys
+import os  # Provides functions for interacting with the operating system.
+import time  # Provides various time-related functions.
+from pydub import AudioSegment  # Library for audio manipulation.
+import threading  # Provides support for threading.
+import requests  # Used for making HTTP requests, typically for API interactions.
+import base64  # Provides functions for encoding and decoding data using Base64 encoding.
+from tqdm import tqdm  # Provides a progress bar to show the progress of iterative tasks.
+import sys  # Provides access to some variables used or maintained by the Python interpreter and to functions that interact strongly with the interpreter.
 
-#! Removed playsound import - Krishpkreame
-# from playsound import playsound
 COUNT = 0
 VOICES = [
-    # DISNEY VOICES
-    'en_us_ghostface',            # Ghost Face
-    'en_us_chewbacca',            # Chewbacca
-    'en_us_c3po',                 # C3PO
-    'en_us_stitch',               # Stitch
-    'en_us_stormtrooper',         # Stormtrooper
-    'en_us_rocket',               # Rocket
-
     # ENGLISH VOICES
     'en_au_001',                  # English AU - Female
     'en_au_002',                  # English AU - Male
@@ -39,18 +27,10 @@ VOICES = [
     'en_us_009',                  # English US - Male 3
     'en_us_010',                  # English US - Male 4
 
-    # SINGING VOICES
-    'en_female_f08_salut_damour',  # Alto
-    'en_male_m03_lobby',           # Tenor
-    'en_female_f08_warmy_breeze',  # Warmy Breeze
-    'en_male_m03_sunshine_soon',   # Sunshine Soon
-
     # OTHER
     'en_male_narration',           # narrator
     'en_male_funny',               # wacky
     'en_female_emotional',         # peaceful
-
-    #! Personal Note: The non-english voices were removed from the list - Krishpkreame
 ]
 
 ENDPOINTS = ['https://tiktok-tts.weilnet.workers.dev/api/generation',
@@ -131,7 +111,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                     COUNT += 1
                     break  # Exit the retry loop if successful
                 else:
-                    print("\033[1m(#)\033[0m Service not available, retrying...")
+                    print("\033[1m(#)\033[0m Service not available, retrying...\n")
         except Exception as e:
             print("\033[1m(#)\033[0m Error occurred while checking API availability:", str(e))
 
@@ -140,21 +120,21 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
 
     else:
         # If all retries fail, print an error message and return
-        print("\033[1m(#)\033[0m Maximum retries reached, unable to access the service.")
+        print("\033[1m(#)\033[0m Maximum retries reached, unable to access the service.\n")
         return
 
     # The rest of the function remains unchanged
     # checking if arguments are valid
     if voice == "none":
-        print("\033[1m(#)\033[0m No voice has been selected")
+        print("\033[1m(#)\033[0m No voice has been selected.\n")
         return
 
     if not voice in VOICES:
-        print("\033[1m(#)\033[0m Voice does not exist")
+        print("\033[1m(#)\033[0m Voice does not exist.\n")
         return
 
     if len(text) == 0:
-        print("\033[1m(#)\033[0m Insert a valid text")
+        print("\033[1m(#)\033[0m Insert a valid text.\n")
         return
 
     # creating the audio file
@@ -167,7 +147,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                 audio_base64_data = str(audio).split('"')[3].split(",")[1]
 
             if audio_base64_data == "error":
-                print("\033[1m(#)\033[0m This voice is unavailable right now")
+                print("\033[1m(#)\033[0m This voice is unavailable right now. \n")
                 return
 
         else:
@@ -184,7 +164,7 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
                     base64_data = str(audio).split('"')[3].split(",")[1]
 
                 if audio_base64_data == "error":
-                    print("\033[1m(#)\033[0m This voice is unavailable right now")
+                    print("\033[1m(#)\033[0m This voice is unavailable right now. \n")
                     return "error"
 
                 audio_base64_data[index] = base64_data
@@ -207,22 +187,18 @@ def tts(text: str, voice: str = "none", filename: str = "output.wav", speed: int
         save_audio_file(audio_base64_data, filename)
         #print(f"'{filename}' saved.")
 
-        #! Personal Note: Added speed control to the TTS - Krishpkreame
         if speed != 1.0:
             audio = AudioSegment.from_file(filename, format="mp3")
             final = audio.speedup(playback_speed=speed)
             final.export(filename, format="mp3")
 
         if play_sound:
-            #! Personal Note: Removed playsound because it is not needed - Krishpkreame
-            #! playsound(filename)
-            print("\033[1m(#)\033[0m Wont be playing sound, as it is not supported in this environment")
+            print("\033[1m(#)\033[0m Wont be playing sound, as it is not supported in this environment. \n")
 
     except Exception as e:
         print("\033[1m(#)\033[0m Error occurred while generating audio:", str(e))
 
 
-#! Personal Note: Added get_duration function - Krishpkreame
 def get_duration(filename: str) -> float:
     """
     Calculate the duration of an audio file in seconds.
@@ -243,8 +219,6 @@ def get_duration(filename: str) -> float:
         return round(duration_seconds, 2)
     except FileNotFoundError as e:
         return 0
-
-#! Personal Note: Added merge_audio_files function - Krishpkreame
 
 
 def merge_audio_files(output_file: str, delay: float = 0.1) -> float:
