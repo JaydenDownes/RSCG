@@ -4,3 +4,5 @@ ftfy
 pydub
 moviepy
 tabulate
+flask
+pillow==9.5.0
