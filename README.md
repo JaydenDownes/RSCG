@@ -20,8 +20,8 @@ Reddit Short-Form Content Generator is a powerful yet user-friendly software des
 2. Download RSCG by using git clone or clicking on the green **Code** button and clicking **Download Zip**
 3. Extract and open the folder in any terminal app
 4. Run ```pip install -r requirements.txt```
-5. **FFMPEG** is an important requirement needed to render the final video, follow setup [here](https://gist.github.com/barbietunnie/47a3de3de3274956617ce092a3bc03a1)
-6. **ImageMagick** is another requirement, installation instructions can be found [here](https://imagemagick.org/script/download.php)
+5. **FFMPEG** is an important requirement needed to render the final video, follow setup [here](https://gist.github.com/barbietunnie/47a3de3de3274956617ce092a3bc03a1). Downloading on windows will also require 7Zip to unpack the file, which can be downloaded from [here](https://www.7-zip.org/download.html).
+6. **ImageMagick** is another requirement, which can be downloaded [here](https://imagemagick.org/script/download.php#windows) for windows. For other operating systems visit [here](https://imagemagick.org/script/download.php).
 
 
 ### Step 2: Obtaining Reddit API Credentials
