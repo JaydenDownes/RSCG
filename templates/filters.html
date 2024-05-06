@@ -1,0 +1,53 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Filters
+{% endblock %}
+
+{% block content %}
+
+
+<h1 class="article__title">Filters.</h1>
+
+<div class="forms-container">
+    <form action="/add_filter" method="post" class="form-item">
+        <h2>Add Filter</h2>
+        <input type="text" name="word" placeholder="Enter Word">
+        <button type="submit">Add</button>
+    </form>
+
+    <form action="/remove_filter" method="post" class="form-item">
+        <h2>Remove Filter</h2>
+        <input type="text" name="word" placeholder="Enter Word">
+        <button type="submit">Remove</button>
+    </form>
+</div>
+
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Word</th>
+    </tr>
+    {% for filter in filters %}
+    <tr>
+        <td>{{ filter[0] }}</td>
+        <td>{{ filter[1] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- Pagination -->
+<div class="pagination-container">
+    {% if page > 1 %}
+        <a class="pagination-button" href="?page={{ page - 1 }}">Previous</a>
+    {% endif %}
+
+    Page {{ page }} of {{ total_pages }}
+
+    {% if page < total_pages %}
+        <a class="pagination-button" href="?page={{ page + 1 }}">Next</a>
+    {% endif %}
+</div>
+
+{% endblock %}

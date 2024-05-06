@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width,initial-scale=1" name="viewport">
+    <meta content="ie=edge" http-equiv="X-UA-Compatible">
+    <meta content="Alex Andonie" name="author">
+    <title>{% block title %}{% endblock %}</title>
+    <meta content="Simply is a simple portfolio template. It's released under MIT so you can do whatever you want with it." name="description">
+    <meta content="Simply - A simple portfolio template" property="og:title">
+    <meta content="Simply is a simple portfolio template. It's released under MIT so you can do whatever you want with it." property="og:description">
+    <meta content="/images/social-thumbnail.1d8108dd03026679ab752453251aae2a.jpg" property="og:image">
+    <meta content="https://simply.alexandonie.com" property="og:url">
+    <meta content="summary_large_image" name="twitter:card">
+    <meta content="Simply - A simple portfolio template" property="og:site_name">
+    <meta content="Simply portfolio template" name="twitter:image:alt">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,700" rel="stylesheet">
+    <link href="main.20c3560bccf4da08e76e.css" rel="stylesheet">
+
+    <script>
+        function toggleContent(postId) {
+            var content = document.getElementById('content-' + postId);
+            content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+    <style>
+        .content {
+            display: none;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        tr {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.329);
+        }
+        /* Set max width for URL cell */
+        .url-cell {
+            max-width: 200px;
+            word-wrap: break-word;
+        }
+        .pagination-container {
+            text-align: center;
+            padding: 50px;
+        }
+        .pagination-button {
+            padding: 25px;
+        }
+        .control-button {
+            margin: 5px;
+        }
+        .form-item {
+            padding: 10px;
+        }
+        table th {
+            font-weight: bold;
+        }
+        .button-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .menu-item {
+            margin-left: 30px;
+            margin-right: 30px;
+            margin-bottom: 40px;
+        }
+        .forms-container {
+            display: flex;
+            justify-content: center;
+            padding-bottom: 20px;
+        }
+
+        .form-item {
+            padding: 10px;
+            margin: 0 5px; /* Adjust as needed */
+            text-align: center; /* Center text within form */
+        }
+
+        .form-item h2 {
+            margin-top: 0;
+        }
+
+        .form-item input[type="text"] {
+            margin-right: 5px;
+        }
+
+        .form-item button {
+            cursor: pointer;
+        }
+
+
+    </style>
+</head>
+<section>
+    <header class="section-container header">
+        <a class="header__logo" href="/" title="home page"><img alt="Simply" src="images/logo.f9ce0ba061b07d70d790b638e6ee1644.svg"></a> <button class="btn header__menu-button" data-toggle="navigation" type="button"><span class="sr-only">Open navigation menu</span> <img alt="" src="images/icon-menu.8761497e72a63b00bfd48db97aac628e.svg"></button>
+        <div class="button-container">
+            <a href="/posts" class="menu-item article__excerpt">Posts</a>
+            <a href="/subreddits" class="menu-item article__excerpt">Subreddits</a>
+            <a href="/filters" class="menu-item article__excerpt">Filters</a>
+            <a href="/settings" class="menu-item article__excerpt">Settings</a>
+        </div>
+        <br>
+    </header>
+    <section class="section-container section-container--pt-l">
+    <div class="button-container">
+            <form action="/action" method="post">
+                <button type="submit" name="action" value="Auto" class="control-button">Auto Mode</button>
+                <button type="submit" name="action" value="ContentSearch" class="control-button">Content Search Mode</button>
+                <button type="submit" name="action" value="UpdateContentSearch" class="control-button">Update Content Search Mode</button>
+                <button type="submit" name="action" value="CreateContent" class="control-button">Create Content Mode</button>
+                <button type="submit" name="action" value="RetryErrors" class="control-button">Retry Errors Mode</button>
+                <button type="submit" name="action" value="ClearDatabase" class="control-button">Clear Database</button>
+            </form>
+        </div>
+    </section>
+    <section class="section-container section-container--pt-l">       
+        
+        {% block content %}
+        {% endblock %}
+
+    </section>
+    <footer class="footer">
+        <ul class="footer__links">
+            <li>
+                <a href="#0">linkedin</a>
+            </li>
+            <li>
+                <a href="#0">twitter</a>
+            </li>
+            <li>
+                <a href="#0">instagram</a>
+            </li>
+            <li>
+                <a href="#0">dribbble</a>
+            </li>
+            <li>
+                <a href="#0">resume</a>
+            </li>
+        </ul>
+        <p class="footer__copy">Simply 2019. All rights reserved.</p>
+    </footer>
+</div>
+<script src="main.b3f83a02f1216c43a372.bundle.js" type="text/javascript">
+</script>
+</body>
+</html>

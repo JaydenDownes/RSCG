@@ -1,0 +1,52 @@
+
+{% extends 'layout.html' %}
+
+{% block title %}
+    Subreddits
+{% endblock %}
+
+{% block content %}    
+<h1 class="article__title">Subreddits.</h1>
+
+<div class="forms-container">
+    <form action="/add_subreddit" method="post" class="form-item">
+        <h2>Add Subreddit</h2>
+        <input type="text" name="subreddit" placeholder="Enter Subreddit Name">
+        <button type="submit">Add</button>
+    </form>
+
+    <form action="/remove_subreddit" method="post" class="form-item">
+        <h2>Remove Subreddit</h2>
+        <input type="text" name="subreddit" placeholder="Enter Subreddit Name">
+        <button type="submit">Remove</button>
+    </form>
+</div>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Subreddit Name</th>
+        <th>Enabled</th>
+    </tr>
+    {% for subreddit in subreddits %}
+    <tr>
+        <td>{{ subreddit[0] }}</td>
+        <td>{{ subreddit[1] }}</td>
+        <td>{{ subreddit[2] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- Pagination -->
+<div class="pagination-container">
+    {% if page > 1 %}
+        <a class="pagination-button" href="?page={{ page - 1 }}">Previous</a>
+    {% endif %}
+
+    Page {{ page }} of {{ total_pages }}
+
+    {% if page < total_pages %}
+        <a class="pagination-button" href="?page={{ page + 1 }}">Next</a>
+    {% endif %}
+</div>
+{% endblock %}

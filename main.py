@@ -16,28 +16,18 @@ import sys  # Provides access to some variables used or maintained by the Python
 import time  # Provides various time-related functions.
 from tabulate import tabulate # Provides utilities to create tables in the terminal space
 
+
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+import sqlite3
+
+
+
+
 # Clear_terminal Function
 def clear_terminal():
     """Clears the terminal screen."""
     # Clear the terminal screen based on the operating system
     os.system('cls' if os.name == 'nt' else 'clear')
-
-# Setup Credentials Function (Sets up Reddit API access)
-def setup_credentials():
-    print("\nSetting up the credentials, this will only run the first time you run the program\n")
-    print("You will need to create a Reddit app and get the client id and client secret\n")
-    print("You will also need to enter your Reddit username and password\n")
-    print("These credentials will be stored in a file called credentials.txt\n")
-    print("This file will be stored locally and will only be used to authenticate with Reddit and to get the post text\n")
-    print("Goto https://github.com/JaydenDownes/RSCG and follow the instructions\n")
-
-    client_id = input("Enter the client id:\n")
-    client_secret = input("Enter the client secret:\n")
-    username = input("Enter the username:\n")
-    password = input("Enter the password:\n")
-    with open("credentials.txt", "w") as f:
-        f.write(f"{client_id}\n{client_secret}\n{username}\n{password}")
-
 
 
 if __name__ == "__main__":
@@ -51,42 +41,31 @@ if __name__ == "__main__":
         print("\033[31m\033[1m(#)\033[0m ffmpeg is not installed. Please install ffmpeg to continue.\n")
         exit(1)
 
-    # Check if the credentials file exists
-    if not os.path.exists("credentials.txt"):
-        # print("No credentials file found, going through the setup")
-        setup_credentials()
+    # Create an instance of RedditAPI
+    reddit = RedditAPI()
+
+    # Fetch Reddit API credentials from the database
+    client_id, client_secret, username, password = reddit.get_credentials()
+
+    # If credentials do not exist, go through the setup
+    if any(credential is None for credential in [client_id, client_secret, username, password]):
+        reddit.setup_credentials()
 
     # Check if the outputs folder exists
     if not os.path.exists("outputs"):
         os.mkdir("outputs")
-        # print("Created inputs folder\n - This is where final videos will be saved.")
+
     # Check if the inputs folder exists
     if not os.path.exists("inputs"):
         os.mkdir("inputs")
-        # print("Created inputs folder\n - This is where input video files will need to be stored\n - The srt and wav files will also be stored here.")
-    # Check if the outputs folder exists
+
+    # Check if the temp folder exists
     if not os.path.exists("temp"):
         os.mkdir("temp")
-        # print("Created temp folder\n - This is where temporary will be saved.")
 
     # Check if any mp4 files are present in the inputs folder
     if len([i for i in os.listdir("inputs") if i.endswith(".mp4")]) == 0:
         print("\033[31m\033[1m(#)\033[0m No input video files found in the inputs folder, Add your input video files to this folder.\n")
-        exit(1)
-
-    # Read the credentials from the file
-    with open("credentials.txt", "r") as f:
-        creds = f.readlines()
-
-    # Try create the Reddit instance with the credentials.
-    try:
-        reddit = RedditAPI(
-            creds[0].strip(),  # client_id
-            creds[1].strip(),  # client_secret
-            creds[2].strip(),  # username
-            creds[3].strip())  # password
-    except:
-        print("\033[31m\033[1m(#)\033[0m Credentials not set correctly, delete credentials.txt and setup again.\n")
         exit(1)
 
     # Define command-line arguments
@@ -114,12 +93,11 @@ if __name__ == "__main__":
         " | _ \ __|   \|   \_ _|_   _| / __|/ __/ __| \n ", 
         " |   / _|| |) | |) | |  | |   \__ \ (_| (_ | \n ", 
         " |_|_\___|___/|___/___| |_|   |___/\___\___| \n ", 
-        "Reddit Short-Form Content Generator V2.2 \033[0m \n ")
-        
-    # If no run mode is provided, run the program in auto.
-    if not any([args.ContentSearch, args.UpdateContentSearch, args.CreateContent, args.GenerateVideo, args.RetryErrors, args.ClearDatabase, args.ClearEntry, args.ViewSubreddits, args.AddSubreddit, args.RemoveSubreddit, args.ViewFilter, args.AddFilter, args.RemoveFilter]):
+        "Reddit Short-Form Content Generator V2.3 by Jayden Downes \033[0m \n ")
+
+    def Auto():
         # Execute Auto mode logic if no specific options are provided
-        print("\033[1m(#)\033[0m Running in Auto Mode, if this was a mistake run the program using '-h' or '--help' command-line argument.\n")
+        print("\033[1m(#)\033[0m Running in Auto Mode, if this was a mistake run the program using the '-h' or '--help' command-line argument.\n")
         # Auto mode logic
         
         # Define the duration of the interval in seconds (30 minutes)
@@ -156,26 +134,224 @@ if __name__ == "__main__":
                 print("\033[1m(#)\033[0m Code execution took longer than 30 minutes. Restarting loop immediately.\n")
 
         pass
+
+    def ContentSearch():
+        # Content search logic
+        print("\033[1m(#)\033[0m Searching through Reddit for posts\n") 
+        subreddits = reddit.view_subreddits()
+        updated_posts = reddit.get_updated_posts()
+        reddit.update_database(updated_posts)
+        pass
+
+    def UpdateContentSearch():
+        # Update content search logic
+        print("\033[1m(#)\033[0m Searching through Reddit for update content, this can be slow due to API limits.\n") 
+        reddit.check_for_similar_titles()
+        pass
+
+    def CreateContent():
+        # Create content logic (run video creation loop)
+        print("\033[1m(#)\033[0m Generating video content, this will take a long time.\n")
+        reddit.process_unmade_videos()
+        pass
+
+    def GenerateVideo():
+        # Generate video logic
+        url = args.GenerateVideo
+        # Logic for generating video for a specified Reddit post
+        print(f"\033[1m(#)\033[0m Generating content for provided url ({url}), please wait..\n")
+
+        reddit.generateVideo(url)
+
+    def RetryErrors():
+        # Retry errors logic
+        print("\033[1m(#)\033[0m Program attempting to regenerate content for previously failed entries in the database\n")
+        reddit.retry_errors()
+        pass
+
+    def ClearDatabase():
+        # Clear database logic
+        print("\n\033[1m(#)\033[0m Clearing the database..\n")
+        # Clear database logic
+        reddit.clear_database_entries()
+        pass
+
+    def AddSubreddit(subreddit):
+        # Add subreddit to content search
+        print(f"\033[1m(#)\033[0m Adding '{subreddit}' to the content search list..\n")
+        reddit.add_subreddit(subreddit)
+
+    def RemoveSubreddit(subreddit):
+        # Remove subreddit to content search
+        print(f"\033[1m(#)\033[0m Removing '{subreddit}' from the content search list..\n")
+        reddit.remove_subreddit(subreddit)
+
+    def AddFilter(word):
+        # Add filter logic
+        print(f"\033[1m(#)\033[0m Adding '{word}' to the censored list..\n")
+        reddit.add_filter(word)
+
+    def RemoveFilter(word):
+        # Remove filter logic
+        print(f"\033[1m(#)\033[0m Removing '{word}' to the censored list..\n")
+        reddit.remove_filter(word)
+
+
+
+    # If no run mode is provided, run the program in auto.
+    if not any([args.Auto, args.ContentSearch, args.UpdateContentSearch, args.CreateContent, args.GenerateVideo, args.RetryErrors, args.ClearDatabase, args.ClearEntry, args.ViewSubreddits, args.AddSubreddit, args.RemoveSubreddit, args.ViewFilter, args.AddFilter, args.RemoveFilter]):
+        
+        print("No command line parameters passed so starting the web server!")
+
+        app = Flask(__name__)
+
+        # Route to perform actions
+        @app.route('/action', methods=['POST'])
+        def perform_action():
+            action = request.form['action']
+            if action == 'Auto':
+                print("\033[1m(#)\033[0m Website request for Auto Mode, starting now..\n")
+                Auto() # Run Auto Mode
+                return '', 204  # No content, status code 204 (success)
+            elif action == 'ContentSearch':
+                print("\033[1m(#)\033[0m Website request for Content Search Mode, starting now..\n")
+                # Call function for ContentSearch
+                # Example: content_search_function()
+                return '', 204
+            elif action == 'UpdateContentSearch':
+                print("\033[1m(#)\033[0m Website request for Update Content Search Mode, starting now..\n")
+                # Call function for UpdateContentSearch
+                # Example: update_content_search_function()
+                return '', 204
+            elif action == 'CreateContent':
+                print("\033[1m(#)\033[0m Website request for Create Content Mode, starting now..\n")
+                # Call function for CreateContent
+                # Example: create_content_function()
+                return '', 204
+            elif action == 'RetryErrors':
+                print("\033[1m(#)\033[0m Website request for Retry Errors Mode, starting now..\n")
+                # Call function for RetryErrors
+                # Example: retry_errors_function()
+                return '', 204
+            elif action == 'ClearDatabase':
+                print("\033[1m(#)\033[0m Website request for Clearing Database, clearing now..\n")
+                # Call function for ClearDatabase
+                # Example: clear_database_function()
+                return '', 204
+            elif action == 'ViewSubreddits':
+                # Redirect to subreddits route
+                return redirect(url_for('subreddits', page=1))
+            elif action == 'ViewFilter':
+                # Redirect to filters route
+                return redirect(url_for('filters', page=1))
+            return 'Unknown action', 400  # Return 400 status code for unknown action
+
+        # Route to add subreddit
+        @app.route('/add_subreddit', methods=['POST'])
+        def add_subreddit():
+            subreddit = request.form['subreddit']
+            print("\033[1m(#)\033[0m Website request to add a subreddit: ", subreddit)
+            # Call function to add subreddit
+            # Example: add_subreddit_function(subreddit)
+            return '', 204  # No content, status code 204 (success)
+
+        # Route to remove subreddit
+        @app.route('/remove_subreddit', methods=['POST'])
+        def remove_subreddit():
+            subreddit = request.form['subreddit']
+            print("\033[1m(#)\033[0m Website request to remove a subreddit: ", subreddit)
+            # Call function to remove subreddit
+            # Example: remove_subreddit_function(subreddit)
+            return '', 204
+
+        # Route to add filter
+        @app.route('/add_filter', methods=['POST'])
+        def add_filter():
+            word = request.form['word']
+            print("\033[1m(#)\033[0m Website request to add a filter word: ", word)
+            # Call function to add filter
+            # Example: add_filter_function(word)
+            return '', 204
+
+        # Route to remove filter
+        @app.route('/remove_filter', methods=['POST'])
+        def remove_filter():
+            word = request.form['word']
+            print("\033[1m(#)\033[0m Website request to remove a filter word: ", word)
+            # Call function to remove filter
+            # Example: remove_filter_function(word)
+            return '', 204
+
+
+
+        # Route for posts page
+        @app.route('/posts')
+        def posts():
+            page = int(request.args.get('page', 1))
+            per_page = 10  # Number of entries per page
+            posts, total_posts = reddit.web_get_posts(page, per_page)
+            total_pages = (total_posts + per_page - 1) // per_page
+            
+            return render_template('posts.html', posts=posts, page=page, total_pages=total_pages)
+
+
+        # Route for subreddits page
+        @app.route('/subreddits')
+        def subreddits():
+            page = int(request.args.get('page', 1))
+            per_page = 50  # Number of entries per page
+            subreddits, total_subreddits = reddit.web_get_subreddits(page, per_page)
+            total_pages = (total_subreddits + per_page - 1) // per_page
+            
+            return render_template('subreddits.html', subreddits=subreddits, page=page, total_pages=total_pages)
+
+            
+        # Route for filters page
+        @app.route('/filters')
+        def filters():
+            page = int(request.args.get('page', 1))
+            per_page = 50  # Number of entries per page
+            filters, total_filters = reddit.web_get_filters(page, per_page)
+            total_pages = (total_filters + per_page - 1) // per_page
+            
+            return render_template('filters.html', filters=filters, page=page, total_pages=total_pages)
+        
+        # Route for the settings page
+        @app.route('/settings')
+        def settings():
+            return render_template('settings.html')
+
+        # Route to serve files
+        @app.route('/<path:path>')
+        def serve_file(path):
+            # Specify the directory where the files are located
+            directory = 'templates/'
+            # Use Flask's send_from_directory to serve the file
+            return send_from_directory(directory, path)
+
+        if __name__ == '__main__':
+            app.run(debug=True)
+
     else:
+        # Logic for each specific option
+        if args.Auto:
+            # Content search logic
+            Auto()
+            pass
         # Logic for each specific option
         if args.ContentSearch:
             # Content search logic
-            print("\033[1m(#)\033[0m Searching through Reddit for posts\n") 
-            subreddits = reddit.view_subreddits()
-            updated_posts = reddit.get_updated_posts()
-            reddit.update_database(updated_posts)
+            ContentSearch()
             pass
 
         if args.UpdateContentSearch:
             # Update content search logic
-            print("\033[1m(#)\033[0m Searching through Reddit for update content, this can be slow due to API limits.\n") 
-            reddit.check_for_similar_titles()
+            UpdateContentSearch()
             pass
 
         if args.CreateContent:
             # Create content logic (run video creation loop)
-            print("\033[1m(#)\033[0m Generating video content, this will take a long time.\n")
-            reddit.process_unmade_videos()
+            CreateContent()
             pass
 
         if args.GenerateVideo:
@@ -183,7 +359,7 @@ if __name__ == "__main__":
             url = args.GenerateVideo
             # Logic for generating video for a specified Reddit post
             print(f"\033[1m(#)\033[0m Generating content for provided url ({url}), please wait..\n")
-            
+
             reddit.generateVideo(url)
             print(f"\033[1m(#)\033[0m Finished generating content for provided url ({url}), closing program in 5 seconds\n")
             time.sleep(5)
@@ -192,7 +368,7 @@ if __name__ == "__main__":
             # Retry errors logic
             print("\033[1m(#)\033[0m Program attempting to regenerate content for previously failed entries in the database\n")
             reddit.retry_errors()
-            print("\033[1m(#)\033[0m Program hyas attempted to regenerate content for previously failed entries in the database, closing in 5 seconds..\n")
+            print("\033[1m(#)\033[0m Program has attempted to regenerate content for previously failed entries in the database, closing in 5 seconds..\n")
             time.sleep(5)
             pass
 
@@ -204,9 +380,7 @@ if __name__ == "__main__":
             # Check user input
             if confirmation == 'y':
                 # User confirmed, perform clear database logic
-                print("\n\033[1m(#)\033[0m Clearing the database..\n")
-                # Clear database logic
-                reddit.clear_database_entries()
+                ClearDatabase()
                 print("\n\033[1m(#)\033[0m Closing program in 5 seconds..\n")
                 time.sleep(5)
 
@@ -254,16 +428,14 @@ if __name__ == "__main__":
             # Add subreddit to content search
             subreddit = args.AddSubreddit
             # Logic for adding a Subreddit to content search
-            print(f"\033[1m(#)\033[0m Adding '{subreddit}' to the content search list..\n")
-            reddit.add_subreddit(subreddit)
+            AddSubreddit(subreddit)
             time.sleep(3)
 
         if args.RemoveSubreddit:
             # Remove subreddit to content search
             subreddit = args.RemoveSubreddit
             # Logic for removing a Subreddit from content search
-            print(f"\033[1m(#)\033[0m Removing '{subreddit}' from the content search list..\n")
-            reddit.remove_subreddit(subreddit)
+            RemoveSubreddit(subreddit)
             time.sleep(3)
 
         if args.ViewFilter:
@@ -284,14 +456,12 @@ if __name__ == "__main__":
             # Add filter logic
             word = args.AddFilter
             # Logic for adding a word to the censored list
-            print(f"\033[1m(#)\033[0m Adding '{word}' to the censored list..\n")
-            reddit.add_filter(word)
+            AddFilter(word)
             time.sleep(3)
 
         if args.RemoveFilter:
             # Remove filter logic
             word = args.RemoveFilter
             # Logic for removing a word from the censored list
-            print(f"\033[1m(#)\033[0m Removing '{word}' to the censored list..\n")
-            reddit.remove_filter(word)
+            RemoveFilter(word)
             time.sleep(3)

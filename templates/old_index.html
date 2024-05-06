@@ -1,0 +1,107 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        .content {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+    <script>
+        function toggleContent(postId) {
+            var content = document.getElementById('content-' + postId);
+            content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</head>
+<body>
+    <h1>Posts</h1>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Subreddit</th>
+            <th>Title</th>
+            <th>Content</th>
+            <th>Likes</th>
+            <th>Author</th>
+            <th>Created UTC</th>
+            <th>URL</th>
+            <th>Video Made</th>
+        </tr>
+        {% for post in posts %}
+        <tr>
+            <td>{{ post[0] }}</td>
+            <td>{{ post[1] }}</td>
+            <td><a href="#" onclick="toggleContent('{{ post[0] }}');">{{ post[2] }}</a></td>
+            <td>{{ post[3].split(".")[0] }}...</td>
+            <td>{{ post[4] }}</td>
+            <td>{{ post[5] }}</td>
+            <td>{{ post[6] }}</td>
+            <td>{{ post[7] }}</td>
+            <td>{{ post[8] }}</td>
+        </tr>
+        <tr>
+            <td colspan="9">
+                <div class="content" id="content-{{ post[0] }}">
+                    {{ post[3] }}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Pagination -->
+    <div>
+        {% if page > 1 %}
+            <a href="?page={{ page - 1 }}">Previous</a>
+        {% endif %}
+        
+        Page {{ page }} of {{ total_pages }}
+
+        {% if page < total_pages %}
+            <a href="?page={{ page + 1 }}">Next</a>
+        {% endif %}
+    </div>
+
+    <h2>Actions</h2>
+    <form action="/action" method="post">
+        <button type="submit" name="action" value="Auto">Auto</button>
+        <button type="submit" name="action" value="ContentSearch">Content Search</button>
+        <button type="submit" name="action" value="UpdateContentSearch">Update Content Search</button>
+        <button type="submit" name="action" value="CreateContent">Create Content</button>
+        <button type="submit" name="action" value="RetryErrors">Retry Errors</button>
+        <button type="submit" name="action" value="ClearDatabase">Clear Database</button>
+        <button type="submit" name="action" value="ViewSubreddits">View Subreddits</button>
+        <button type="submit" name="action" value="ViewFilter">View Filter</button>
+    </form>
+
+    <form action="/add_subreddit" method="post">
+        <h2>Add Subreddit</h2>
+        <input type="text" name="subreddit" placeholder="Enter Subreddit Name">
+        <button type="submit">Add</button>
+    </form>
+
+    <form action="/remove_subreddit" method="post">
+        <h2>Remove Subreddit</h2>
+        <input type="text" name="subreddit" placeholder="Enter Subreddit Name">
+        <button type="submit">Remove</button>
+    </form>
+
+    <form action="/add_filter" method="post">
+        <h2>Add Filter</h2>
+        <input type="text" name="word" placeholder="Enter Word">
+        <button type="submit">Add</button>
+    </form>
+
+    <form action="/remove_filter" method="post">
+        <h2>Remove Filter</h2>
+        <input type="text" name="word" placeholder="Enter Word">
+        <button type="submit">Remove</button>
+    </form>
+</body>
+</html>

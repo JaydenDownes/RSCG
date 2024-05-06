@@ -1,0 +1,63 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Posts
+{% endblock %}
+
+
+{% block content %}
+    <h1 class="article__title">Posts.</h1>
+    <!-- Pagination
+    <div class="pagination-container">
+        {% if page > 1 %}
+            <a class="pagination-button" href="?page={{ page - 1 }}">Previous</a>
+        {% endif %}
+
+        Page {{ page }} of {{ total_pages }}
+
+        {% if page < total_pages %}
+            <a class="pagination-button" href="?page={{ page + 1 }}">Next</a>
+        {% endif %}
+    </div> -->
+
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Subreddit</th>
+            <th>Title</th>
+            <th>Content</th>
+            <th>Likes</th>
+            <th>Author</th>
+            <th>Created UTC</th>
+            <th class="url-cell">URL</th>
+            <th>Video Made</th>
+        </tr>
+        {% for post in posts %}
+        <tr>
+            <td>{{ post[0] }}</td>
+            <td>{{ post[1] }}</td>
+            <td><a href="#" onclick="toggleContent('{{ post[0] }}');">{{ post[2] }}</a></td>
+            <td>{{ post[3].split(".")[0] }}...</td>
+            <td>{{ post[4] }}</td>
+            <td>{{ post[5] }}</td>
+            <!--<td>{{ post[6] }}</td>-->
+            <td class="url-cell">{{ post[7] }}</td>
+            <td>{{ post[8] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+        {% if page > 1 %}
+            <a class="pagination-button" href="?page={{ page - 1 }}">Previous</a>
+        {% endif %}
+
+        Page {{ page }} of {{ total_pages }}
+
+        {% if page < total_pages %}
+            <a class="pagination-button" href="?page={{ page + 1 }}">Next</a>
+        {% endif %}
+    </div>
+{% endblock %}
